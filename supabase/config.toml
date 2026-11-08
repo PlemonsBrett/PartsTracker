@@ -1,0 +1,8 @@
+project_id = "partstracker"
+
+# Called by AI agents with an API key instead of a user session.
+[functions.inventory-export]
+verify_jwt = false
+
+[functions.parse-inventory]
+verify_jwt = true
