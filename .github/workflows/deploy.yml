@@ -21,8 +21,9 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          # Public by design (the publishable key is protected by RLS); safe to commit.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://heuknkubqgjkhcixcfgh.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_pZSmwPshMWT5NEGwTll9dg_egBpESeS' }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

@@ -19,7 +19,7 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
    npx supabase functions deploy parse-inventory inventory-export mcp
    ```
    Create your account via the app, then **turn off "Allow new users to sign up"** (Auth → Providers → Email) so it stays single-user. Then `npx supabase secrets set OWNER_USER_ID=<your auth uid>` (Auth → Users). The MCP server requires it; the export endpoint uses it to limit results to your rows.
-2. **GitHub Pages**: repo Settings → Pages → Source: *GitHub Actions*. Under Settings → Secrets and variables → Actions → **Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (the publishable key). Push to `main` to deploy.
+2. **GitHub Pages**: repo Settings → Pages → Source: *GitHub Actions*. The workflow already embeds the public Supabase URL and publishable key (override with Actions variables `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` if you move projects). Push to `main` to deploy.
 3. **Local dev**: `cp .env.example .env.local`, fill in, `npm install && npm run dev`.
 
 ## Using it
