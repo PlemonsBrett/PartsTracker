@@ -2,7 +2,7 @@
 
 Personal electronics inventory. Search it, tap +/− to change quantities, and add or update parts by **photo, typing, or voice dictation**. Export the list for AI agents.
 
-- **Frontend**: React + Vite, static, hosted on **GitHub Pages**
+- **Frontend**: React 19 + Vite, static, hosted on **GitHub Pages**
 - **Backend**: **Supabase** (Postgres + RLS, auth, two edge functions)
 - **AI**: `parse-inventory` edge function sends photo/text to Claude and returns *proposed* changes. You review them before anything is saved. The Anthropic key never reaches the browser.
 - **Voice**: browser Web Speech API (Chrome, Edge, Safari). The transcript goes through the same parser.
