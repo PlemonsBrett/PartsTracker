@@ -6,3 +6,7 @@ verify_jwt = false
 
 [functions.parse-inventory]
 verify_jwt = true
+
+# Remote MCP server for agents; authenticates with MCP_API_KEY instead of a user JWT.
+[functions.mcp]
+verify_jwt = false
