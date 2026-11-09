@@ -15,6 +15,17 @@ export interface Item {
   datasheet_url: string | null;
   notes: string | null;
   updated_at: string;
+  fact_sheet?: FactSheet | null;
+  datasheet_path?: string | null;
+  datasheet_status?: 'found' | 'not_found' | null;
+}
+export interface FactSheet {
+  summary: string;
+  specs: { name: string; value: string }[];
+  features: string[];
+  pinout: string | null;
+  source_url: string;
+  extracted_at: string;
 }
 export type Fields = Partial<Omit<Item, 'id' | 'updated_at'>>;
 
@@ -25,6 +36,8 @@ export interface Store {
   insert(fields: Fields & { name: string }): Promise<Item>;
   update(id: string, patch: Fields): Promise<Item>;
   remove(id: string): Promise<void>;
+  /** Time-limited link to a stored datasheet PDF (fallback when no specs could be parsed). */
+  signedDatasheetUrl(path: string): Promise<string | null>;
 }
 
 const normalize = (s: string) =>
@@ -95,6 +108,7 @@ const summary = (i: Item) => ({
   package: i.package,
   part_number: i.part_number,
   location: i.location,
+  has_fact_sheet: Boolean(i.fact_sheet),
   min_quantity: i.min_quantity,
 });
 const isLow = (i: Item) => i.min_quantity > 0 && i.quantity <= i.min_quantity;
@@ -166,10 +180,32 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'get_item',
-    description: 'Get every field of one inventory item.',
+    description:
+      'Get every field of one inventory item, including its parsed fact sheet (key specs from the datasheet) when one has been attached.',
     inputSchema: { type: 'object', properties: { id }, required: ['id'] },
     annotations: { readOnlyHint: true },
     run: (a, store) => need(store, a),
+  },
+  {
+    name: 'get_datasheet',
+    description:
+      'Datasheet info for one part: the parsed fact sheet (summary, key specs, features, pinout) with its source URL. Prefer this over opening the PDF. If specs could not be parsed, a time-limited link to the stored PDF is returned instead.',
+    inputSchema: { type: 'object', properties: { id }, required: ['id'] },
+    annotations: { readOnlyHint: true },
+    async run(a, store) {
+      const item = await need(store, a);
+      const pdf_url = item.datasheet_path ? await store.signedDatasheetUrl(item.datasheet_path) : null;
+      if (!item.fact_sheet && !pdf_url && !item.datasheet_url) {
+        return { name: item.name, status: item.datasheet_status ?? 'not_looked_up', note: 'No datasheet is attached to this part.' };
+      }
+      return {
+        name: item.name,
+        part_number: item.part_number,
+        fact_sheet: item.fact_sheet ?? null,
+        source_url: item.datasheet_url ?? null,
+        pdf_url,
+      };
+    },
   },
   {
     name: 'list_low_stock',

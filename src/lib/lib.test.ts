@@ -19,6 +19,10 @@ const mk = (o: Partial<Item>): Item => ({
   datasheet_url: null,
   notes: null,
   updated_at: '',
+  fact_sheet: null,
+  datasheet_path: null,
+  datasheet_status: null,
+  datasheet_checked_at: null,
   ...o,
 });
 const items = [

@@ -13,6 +13,20 @@ export interface Item {
   datasheet_url: string | null;
   notes: string | null;
   updated_at: string;
+  fact_sheet: FactSheet | null;
+  datasheet_path: string | null;
+  datasheet_status: 'found' | 'not_found' | null;
+  datasheet_checked_at: string | null;
+}
+
+/** Key specs parsed from a datasheet, so nobody has to read the whole PDF. */
+export interface FactSheet {
+  summary: string;
+  specs: { name: string; value: string }[];
+  features: string[];
+  pinout: string | null;
+  source_url: string;
+  extracted_at: string;
 }
 
 export type ItemInput = Partial<Omit<Item, 'id' | 'updated_at'>> & { name: string };

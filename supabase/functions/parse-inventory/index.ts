@@ -54,7 +54,7 @@ const tool = {
 };
 
 const SYSTEM = `You maintain a hobbyist electronics parts inventory.
-Given a photo and/or a message, call propose_changes with one entry per distinct part.
+Given a photo and/or a message, always respond by calling propose_changes once, with one entry per distinct part (an empty list if nothing is identifiable).
 Rules:
 - Match an existing item (by item_id) only when it is clearly the same part (same value/package/part number). Otherwise create a new item with item_id null.
 - Never invent part numbers, values or counts you cannot see or were not told. Leave fields null and put doubts in "note".
@@ -102,10 +102,11 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 2048,
+        // Sonnet 5.5 rejects forced tool_choice (400) and thinks by default: ask for the tool in the prompt and keep effort modest.
+        max_tokens: 16000,
+        output_config: { effort: 'medium' },
         system: SYSTEM,
         tools: [tool],
-        tool_choice: { type: 'tool', name: 'propose_changes' },
         messages: [{ role: 'user', content }],
       }),
     });
