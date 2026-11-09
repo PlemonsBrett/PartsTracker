@@ -16,6 +16,7 @@ Show a drawn pinout in a part's details instead of the plain "1 GAIN, 2 -INPUT, 
 - Possible extras: tap a pin to see its function; expose the structured pins through the MCP `get_datasheet` tool so agents get them too.
 
 ## Done
+
 - Install as a home-screen app (web manifest and icons; no offline mode).
 - Undo for quantity changes (toast with Undo after any +/-, typed count or swipe).
 - Swipe gestures on list rows (right = +1, left = -1).
