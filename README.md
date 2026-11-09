@@ -29,6 +29,7 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
 - **✨ Capture**: 📷 photo of a bag/part/label, 🎤 dictate, or type (“used 4 ATmega328P”, “bought 50 10k 0805, bin A3”). Review the proposed changes, then Apply.
 - **Search**: all terms must match across name, value, package, part number, location, etc. (`10k 0805`). Category chips and a Low-stock filter sit below.
 - **Quantities**: − / + buttons, tap the number to type an exact count, or swipe a row (right = +1, left = −1). A toast offers **Undo** for a few seconds. Every change is logged in `inventory_events`.
+- **Capture notes**: if the analysis flags something (unreadable marking, a guess), that note is saved in the part's Notes. An existing part keeps its notes and the new one is added below.
 - **📷 camera button**: next to Capture; opens the camera and analyses the photo straight away, then shows the same review screen.
 - **Install on your phone**: iPhone: Share → Add to Home Screen. Android/Chrome: menu → Install app. It opens full-screen; there is no offline mode.
 
