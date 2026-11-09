@@ -20,7 +20,7 @@ export default function ExportMenu({ items, label }: { items: Item[]; label: str
   return (
     <div className="menu">
       <button type="button" onClick={() => setOpen(!open)}>
-        ⬇ Export
+        Export
       </button>
       {open && (
         <>

@@ -1,15 +1,17 @@
 import type { Session } from '@supabase/supabase-js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Capture from './components/Capture';
 import ExportMenu from './components/ExportMenu';
 import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
 import { findDatasheet, wantsLookup } from './lib/datasheets';
+import { plural } from './lib/format';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
 import { searchItems } from './lib/search';
 import { configured, supabase } from './lib/supabase';
 import type { Item, ItemInput, Proposal } from './lib/types';
+import { nextUndo, type Undo } from './lib/undo';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -45,6 +47,9 @@ function Inventory() {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
+  const [cameraPhoto, setCameraPhoto] = useState<File | null>(null);
+  const [undo, setUndo] = useState<Undo | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -69,16 +74,35 @@ function Inventory() {
     return r;
   }, [items, query, category, lowOnly]);
 
-  // Optimistic quantity change; roll back by reloading if the write fails.
-  async function setQty(item: Item, qty: number) {
-    setItems((cur) => cur.map((i) => (i.id === item.id ? { ...i, quantity: qty } : i)));
+  // Optimistic quantity write; roll back by reloading if it fails.
+  async function writeQty(id: string, qty: number) {
+    setItems((cur) => cur.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
     try {
-      await updateItem(item.id, { quantity: qty });
+      await updateItem(id, { quantity: qty });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       reload();
     }
   }
+
+  // Row changes (buttons, typed count, swipe) offer a short-lived Undo.
+  function changeQty(item: Item, qty: number) {
+    setUndo((prev) => nextUndo(prev, item, qty));
+    void writeQty(item.id, qty);
+  }
+
+  function undoLast() {
+    if (!undo) return;
+    void writeQty(undo.id, undo.from);
+    setUndo(null);
+  }
+
+  // The Undo offer lapses after a few seconds (and restarts with every new change).
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), 6000);
+    return () => clearTimeout(t);
+  }, [undo]);
 
   const editing = editingId && editingId !== 'new' ? (items.find((i) => i.id === editingId) ?? null) : null;
 
@@ -103,7 +127,7 @@ function Inventory() {
         setNote(`Finding datasheets… ${n + 1}/${list.length}`);
         if ((await findDatasheet(item.id)).status === 'found') found++;
       }
-      setNote(found ? `Attached ${found} datasheet${found > 1 ? 's' : ''}.` : 'No datasheets found.');
+      setNote(found ? `Attached ${plural(found, 'datasheet')}.` : 'No datasheets found.');
     } catch (e) {
       setNote('');
       setError(e instanceof Error ? e.message : String(e));
@@ -116,64 +140,55 @@ function Inventory() {
 
   return (
     <main>
-      <header>
-        <h1>🔧 PartsTracker</h1>
-        <small>
-          {items.length} parts · {total} units
-        </small>
-        <span className="grow" />
+      <header className="top">
+        <div className="brand">
+          <h1>🔧 PartsTracker</h1>
+          <p className="counts">
+            {plural(items.length, 'part')} · {plural(total, 'unit')}
+          </p>
+        </div>
         <ExportMenu
           items={visible}
-          label={visible.length === items.length ? `All ${items.length} items` : `${visible.length} filtered items`}
+          label={visible.length === items.length ? `All ${plural(items.length, 'item')}` : `${plural(visible.length, 'filtered item')}`}
         />
-        <button type="button" onClick={() => supabase.auth.signOut()} title="Sign out">
-          ⏻
+        <button type="button" className="icon" onClick={() => supabase.auth.signOut()} aria-label="Sign out">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 3v9M6.4 6.4a8 8 0 1 0 11.2 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </button>
       </header>
 
-      <div className="toolbar">
+      <div className="filters">
         <input
           type="search"
-          placeholder="Search name, value, package, part #, location…"
+          placeholder="Search parts…"
+          aria-label="Search parts"
+          enterKeyHint="search"
+          autoCapitalize="none"
+          autoCorrect="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button type="button" className="primary" onClick={() => setCapturing(true)}>
-          ✨ Capture
-        </button>
-        <button type="button" onClick={() => setEditingId('new')}>
-          ＋ Add
-        </button>
-      </div>
-
-      <div className="chips">
-        <button
-          type="button"
-          className={!category && !lowOnly ? 'on' : ''}
-          onClick={() => {
-            setCategory('');
-            setLowOnly(false);
-          }}
-        >
-          All
-        </button>
-        <button type="button" className={lowOnly ? 'on' : ''} onClick={() => setLowOnly(!lowOnly)}>
-          Low stock
-        </button>
-        {missing.length > 0 && (
+        <nav className="chips" aria-label="Filters">
           <button
             type="button"
-            onClick={() => attachDatasheets(missing.slice(0, 10))}
-            disabled={Boolean(note) && note.startsWith('Finding')}
+            className={!category && !lowOnly ? 'on' : ''}
+            onClick={() => {
+              setCategory('');
+              setLowOnly(false);
+            }}
           >
-            📄 Find datasheets ({missing.length})
+            All
           </button>
-        )}
-        {categories.map((c) => (
-          <button type="button" key={c} className={category === c ? 'on' : ''} onClick={() => setCategory(category === c ? '' : c)}>
-            {c}
+          <button type="button" className={lowOnly ? 'on' : ''} onClick={() => setLowOnly(!lowOnly)}>
+            Low stock
           </button>
-        ))}
+          {categories.map((c) => (
+            <button type="button" key={c} className={category === c ? 'on' : ''} onClick={() => setCategory(category === c ? '' : c)}>
+              {c}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {error && <p className="msg">{error}</p>}
@@ -182,6 +197,15 @@ function Inventory() {
           {note}
         </p>
       )}
+      {missing.length > 0 && !note.startsWith('Finding') && (
+        <div className="notice">
+          <span>📄 {plural(missing.length, 'part')} without a datasheet</span>
+          <button type="button" onClick={() => attachDatasheets(missing.slice(0, 10))}>
+            Find
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <p className="hint">Loading…</p>
       ) : visible.length === 0 ? (
@@ -189,10 +213,48 @@ function Inventory() {
       ) : (
         <ul className="list">
           {visible.map((i) => (
-            <ItemRow key={i.id} item={i} onQty={setQty} onEdit={(i) => setEditingId(i.id)} />
+            <ItemRow key={i.id} item={i} onQty={changeQty} onEdit={(it) => setEditingId(it.id)} />
           ))}
         </ul>
       )}
+
+      {undo && (
+        <div className="toast" role="status">
+          <span>
+            {undo.name}: {undo.from} → {undo.to}
+          </span>
+          <button type="button" onClick={undoLast}>
+            Undo
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = ''; // lets the same photo be picked again
+          if (file) {
+            setCameraPhoto(file);
+            setCapturing(true);
+          }
+        }}
+      />
+      <div className="dock">
+        <button type="button" className="big icon-wide" aria-label="Take a photo" onClick={() => cameraRef.current?.click()}>
+          📷
+        </button>
+        <button type="button" className="primary big" onClick={() => setCapturing(true)}>
+          ✨ Capture
+        </button>
+        <button type="button" className="big" onClick={() => setEditingId('new')}>
+          ＋ Add
+        </button>
+      </div>
 
       {editingId && (editingId === 'new' || editing) && (
         <ItemForm
@@ -210,7 +272,17 @@ function Inventory() {
           onClose={() => setEditingId(null)}
         />
       )}
-      {capturing && <Capture items={items} onApply={apply} onClose={() => setCapturing(false)} />}
+      {capturing && (
+        <Capture
+          items={items}
+          initialPhoto={cameraPhoto}
+          onApply={apply}
+          onClose={() => {
+            setCapturing(false);
+            setCameraPhoto(null);
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>PartsTracker</title>
+  <rect width="512" height="512" fill="#2563eb"/>
+  <g fill="#fff">
+    <rect x="156" y="156" width="200" height="200" rx="26"/>
+    <rect x="112" y="184" width="44" height="20" rx="6"/><rect x="112" y="228" width="44" height="20" rx="6"/>
+    <rect x="112" y="272" width="44" height="20" rx="6"/><rect x="112" y="316" width="44" height="20" rx="6"/>
+    <rect x="356" y="184" width="44" height="20" rx="6"/><rect x="356" y="228" width="44" height="20" rx="6"/>
+    <rect x="356" y="272" width="44" height="20" rx="6"/><rect x="356" y="316" width="44" height="20" rx="6"/>
+  </g>
+  <circle cx="194" cy="194" r="12" fill="#2563eb"/>
+</svg>
