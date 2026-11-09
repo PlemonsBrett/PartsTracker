@@ -1,10 +1,21 @@
 // Pure helpers for find-datasheet (no Deno or network imports, so they run under vitest).
 
+export type Layout = 'dual' | 'single' | 'three-lead';
+export type PinRole = 'power' | 'ground' | 'input' | 'output' | 'io' | 'nc' | 'other';
+export interface Pin {
+  number: number;
+  name: string;
+  role: PinRole;
+}
+
 export interface FactSheet {
   summary: string;
   specs: { name: string; value: string }[];
   features: string[];
   pinout: string | null;
+  /** Structured pins and package layout, used to draw the pinout diagram. */
+  pins?: Pin[];
+  layout?: Layout;
   source_url: string;
   extracted_at: string;
 }
@@ -21,6 +32,29 @@ export interface PartInfo {
 
 const clip = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
+const LAYOUTS: Layout[] = ['dual', 'single', 'three-lead'];
+const ROLES: PinRole[] = ['power', 'ground', 'input', 'output', 'io', 'nc', 'other'];
+
+/**
+ * Pins must be numbered 1..N with no gaps, and N must suit the layout, or no diagram can be drawn
+ * faithfully. A wrong diagram is worse than none, so anything doubtful is dropped.
+ */
+export function sanitizePins(raw: unknown, layout: unknown): { pins: Pin[]; layout: Layout } | null {
+  if (!LAYOUTS.includes(layout as Layout) || !Array.isArray(raw)) return null;
+  const pins = raw.map((p) => {
+    const r = (p ?? {}) as Record<string, unknown>;
+    return { number: Number(r.number), name: clip(r.name, 24), role: (ROLES.includes(r.role as PinRole) ? r.role : 'other') as PinRole };
+  });
+  if (pins.some((p) => !Number.isInteger(p.number) || !p.name)) return null;
+  pins.sort((a, b) => a.number - b.number);
+  if (pins.some((p, i) => p.number !== i + 1)) return null;
+  const n = pins.length;
+  if (layout === 'dual' && (n < 4 || n > 64 || n % 2 !== 0)) return null;
+  if (layout === 'three-lead' && n !== 3) return null;
+  if (layout === 'single' && (n < 2 || n > 40)) return null;
+  return { pins, layout: layout as Layout };
+}
+
 /** The model's report is untrusted text: clamp sizes and drop anything malformed before storing it. */
 export function sanitizeFacts(raw: unknown, sourceUrl: string, now = new Date()): FactSheet | null {
   const r = (raw ?? {}) as Record<string, unknown>;
@@ -33,8 +67,17 @@ export function sanitizeFacts(raw: unknown, sourceUrl: string, now = new Date())
     .filter(Boolean)
     .slice(0, 10);
   const summary = clip(r.summary, 400);
-  if (!summary && specs.length === 0) return null;
-  return { summary, specs, features, pinout: clip(r.pinout, 400) || null, source_url: sourceUrl, extracted_at: now.toISOString() };
+  const drawn = sanitizePins(r.pins, r.layout);
+  if (!summary && specs.length === 0 && !drawn) return null;
+  return {
+    summary,
+    specs,
+    features,
+    pinout: clip(r.pinout, 400) || null,
+    ...(drawn ?? {}),
+    source_url: sourceUrl,
+    extracted_at: now.toISOString(),
+  };
 }
 
 /** https only, no credentials, no odd ports, no IP literals or internal-looking hosts. */
@@ -155,7 +198,8 @@ Rules:
 - If the part is generic (e.g. a plain resistor or capacitor with only a value and no part number or maker) or you cannot identify it confidently, call report_datasheet with found=false. A wrong datasheet is worse than none.
 - Only report a URL that appeared in your search or fetch results. Never construct one.
 - Every spec must come from the document you read, with units. Do not fill gaps from memory. Set extracted=false if you could not read the document itself.
-- Keep specs to the 8-15 that matter most for choosing and wiring the part (supply voltage, current, frequency, logic levels, operating temperature, dimensions, key ratings).`;
+- Keep specs to the 8-15 that matter most for choosing and wiring the part (supply voltage, current, frequency, logic levels, operating temperature, dimensions, key ratings).
+- Pins: if the datasheet has a pin table or diagram for this exact package, also report \`pins\` (number, name, role) and \`layout\`. Number pins as the datasheet does, from 1 with no gaps. Use layout "dual" for two-row packages (DIP, SOIC, SOP, TSSOP; pin 1 top-left, counting down the left side then up the right), "single" for one row of pins (SIP, module headers), "three-lead" for 3-pin transistor-style packages (TO-92, TO-220, SOT-223; front view, pin 1 on the left). For any other package (QFP, QFN, BGA, and so on), omit \`pins\` and \`layout\` and describe the pins in \`pinout\` instead. Never guess a pin.`;
 }
 
 export const REPORT_TOOL = {
@@ -176,6 +220,20 @@ export const REPORT_TOOL = {
       },
       features: { type: 'array', items: { type: 'string' } },
       pinout: { type: 'string', description: 'Brief pin list, e.g. "1 VCC, 2 GND, 3 OUT"' },
+      layout: { type: 'string', enum: ['dual', 'single', 'three-lead'], description: 'Physical pin arrangement of this package' },
+      pins: {
+        type: 'array',
+        description: 'Every pin of this package, numbered from 1 with no gaps',
+        items: {
+          type: 'object',
+          properties: {
+            number: { type: 'integer' },
+            name: { type: 'string', description: 'As printed in the datasheet, e.g. VCC, GND, +INPUT, PB0' },
+            role: { type: 'string', enum: ['power', 'ground', 'input', 'output', 'io', 'nc', 'other'] },
+          },
+          required: ['number', 'name', 'role'],
+        },
+      },
     },
     required: ['found'],
   },

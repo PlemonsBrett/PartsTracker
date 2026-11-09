@@ -670,3 +670,110 @@ button.rec {
 .row.will-dec::before {
   color: var(--danger);
 }
+
+/* ---- pinout diagram ---- */
+.pinout {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.pinout svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+.pinout small {
+  color: var(--muted);
+}
+.pinout .chip {
+  fill: var(--card);
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+.pinout .notch {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+.pinout .pin1 {
+  fill: var(--muted);
+}
+.pinout .chip-title {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.pin {
+  --c: #94a3b8;
+}
+.pin.power {
+  --c: #ef4444;
+}
+.pin.ground {
+  --c: #64748b;
+}
+.pin.input {
+  --c: #22c55e;
+}
+.pin.output {
+  --c: #f59e0b;
+}
+.pin.io {
+  --c: #3b82f6;
+}
+.pin.nc {
+  --c: #94a3b8;
+}
+.pin.other {
+  --c: #a78bfa;
+}
+.pinout .pin .lead {
+  stroke: var(--c);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.pinout .pin circle {
+  fill: color-mix(in srgb, var(--c) 24%, var(--card));
+  stroke: var(--c);
+  stroke-width: 2;
+}
+.pinout .pin.nc circle {
+  stroke-dasharray: 3 2;
+}
+.pinout .pin .num {
+  fill: var(--fg);
+  font-size: 11px;
+  font-weight: 700;
+}
+.pinout .pin .name {
+  fill: var(--fg);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.pinout-text small {
+  color: var(--muted);
+}

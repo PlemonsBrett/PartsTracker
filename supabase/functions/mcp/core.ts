@@ -24,6 +24,9 @@ export interface FactSheet {
   specs: { name: string; value: string }[];
   features: string[];
   pinout: string | null;
+  /** Structured pins and package layout (dual / single / three-lead), when the datasheet gave them. */
+  pins?: { number: number; name: string; role: string }[];
+  layout?: 'dual' | 'single' | 'three-lead';
   source_url: string;
   extracted_at: string;
 }

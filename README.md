@@ -30,6 +30,7 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
 - **Search**: all terms must match across name, value, package, part number, location, etc. (`10k 0805`). Category chips and a Low-stock filter sit below.
 - **Quantities**: − / + buttons, tap the number to type an exact count, or swipe a row (right = +1, left = −1). A toast offers **Undo** for a few seconds. Every change is logged in `inventory_events`.
 - **Capture notes**: if the analysis flags something (unreadable marking, a guess), that note is saved in the part's Notes. An existing part keeps its notes and the new one is added below.
+- **Pinout diagrams**: a part's datasheet panel draws its pinout (pin 1 marked, pins coloured by role) when the lookup found a numbered pin table for a dual-row, single-row or 3-lead package. Parts looked up before this feature are drawn from their saved text pinout when the package is clear; "Look up again" refreshes them. Anything else keeps the plain text list.
 - **📷 camera button**: next to Capture; opens the camera and analyses the photo straight away, then shows the same review screen.
 - **Install on your phone**: iPhone: Share → Add to Home Screen. Android/Chrome: menu → Install app. It opens full-screen; there is no offline mode.
 
