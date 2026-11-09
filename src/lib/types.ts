@@ -20,11 +20,22 @@ export interface Item {
 }
 
 /** Key specs parsed from a datasheet, so nobody has to read the whole PDF. */
+export type Layout = 'dual' | 'single' | 'three-lead';
+export type PinRole = 'power' | 'ground' | 'input' | 'output' | 'io' | 'nc' | 'other';
+export interface Pin {
+  number: number;
+  name: string;
+  role: PinRole;
+}
+
 export interface FactSheet {
   summary: string;
   specs: { name: string; value: string }[];
   features: string[];
   pinout: string | null;
+  /** Structured pins and package layout, used to draw the pinout diagram. */
+  pins?: Pin[];
+  layout?: Layout;
   source_url: string;
   extracted_at: string;
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { clearDatasheet, findDatasheet, openDatasheetFile } from '../lib/datasheets';
 import { plural } from '../lib/format';
+import { resolvePinout } from '../lib/pinout';
 import type { Item } from '../lib/types';
+import Pinout from './Pinout';
 
 const TOP_SPECS = 5;
 
@@ -15,8 +17,20 @@ export default function DatasheetPanel({ item, onChanged }: Props) {
   const [msg, setMsg] = useState('');
   const facts = item.fact_sheet;
   const attached = Boolean(facts || item.datasheet_path);
+  // The package is often only mentioned in the datasheet summary or specs ("the 8-pin DIP"), not in the part's own fields.
+  const hint = [
+    item.package,
+    item.name,
+    item.description,
+    item.part_number,
+    facts?.summary,
+    ...(facts?.specs.map((x) => `${x.name} ${x.value}`) ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const diagram = facts ? resolvePinout(facts, hint) : null;
   const restSpecs = facts ? facts.specs.slice(TOP_SPECS) : [];
-  const hasMore = restSpecs.length > 0 || Boolean(facts && (facts.features.length > 0 || facts.pinout));
+  const hasMore = restSpecs.length > 0 || Boolean(facts && (facts.features.length > 0 || (facts.pinout && !diagram)));
 
   async function run(job: () => Promise<string | undefined>) {
     setBusy(true);
@@ -61,6 +75,7 @@ export default function DatasheetPanel({ item, onChanged }: Props) {
       {facts && (
         <div className="facts">
           {facts.summary && <p>{facts.summary}</p>}
+          {diagram && <Pinout pins={diagram.pins} layout={diagram.layout} title={item.part_number} />}
           {specRows(facts.specs.slice(0, TOP_SPECS))}
           {hasMore && (
             <details className="more">
@@ -73,7 +88,12 @@ export default function DatasheetPanel({ item, onChanged }: Props) {
                   ))}
                 </ul>
               )}
-              {facts.pinout && <p className="pinout">Pinout: {facts.pinout}</p>}
+              {facts.pinout && !diagram && (
+                <p className="pinout-text">
+                  Pinout: {facts.pinout}
+                  <small> · Use “Look up again” to try for a diagram.</small>
+                </p>
+              )}
             </details>
           )}
           <small>Parsed from the datasheet; verify critical values against the source.</small>
