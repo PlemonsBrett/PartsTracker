@@ -141,6 +141,7 @@ summary {
 
 /* ---- page ---- */
 main {
+  overflow-x: clip; /* a row dragged sideways must never widen the page (that pushes the fixed bar off-screen) */
   max-width: 720px;
   margin: 0 auto;
   padding: calc(8px + env(safe-area-inset-top, 0px)) 16px calc(104px + var(--safe-b));
@@ -217,6 +218,10 @@ main {
   gap: 8px;
 }
 .row {
+  touch-action: pan-y; /* vertical scroll stays native; horizontal drags reach the swipe handler */
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -589,4 +594,79 @@ button.rec {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 14px;
+}
+
+.row.dragging {
+  transition: none;
+}
+.row.will-inc {
+  background: color-mix(in srgb, #22c55e 22%, var(--card));
+}
+.row.will-dec {
+  background: color-mix(in srgb, var(--danger) 22%, var(--card));
+}
+.dock .icon-wide {
+  width: 56px;
+  padding: 0;
+  font-size: 1.3rem;
+}
+.toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(86px + var(--safe-b));
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 6px 6px 6px 16px;
+  color: var(--bg);
+  background: var(--fg);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+}
+.toast span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toast button {
+  flex: none;
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--bg);
+  border: 0;
+}
+
+/* The strip a swiped row uncovers tells you what the swipe will do. */
+.row {
+  position: relative;
+}
+.row[data-swipe]::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--gap);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--muted);
+  overflow: hidden;
+}
+.row[data-swipe="right"]::before {
+  content: "+1";
+  right: 100%;
+}
+.row[data-swipe="left"]::before {
+  content: "\2212 1";
+  left: 100%;
+}
+.row.will-inc::before {
+  color: #22c55e;
+}
+.row.will-dec::before {
+  color: var(--danger);
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDictation } from '../lib/dictation';
 import { imageToBase64, parseInventory } from '../lib/items';
 import type { Item, Proposal } from '../lib/types';
@@ -10,11 +10,13 @@ interface Props {
   items: Item[];
   onApply: (p: Proposal[]) => Promise<void>;
   onClose: () => void;
+  /** A photo taken before the dialog opened (camera button): analysed straight away. */
+  initialPhoto?: File | null;
 }
 
 const OP_LABEL = { add: 'Add', remove: 'Remove', set: 'Set to' } as const;
 
-export default function Capture({ items, onApply, onClose }: Props) {
+export default function Capture({ items, onApply, onClose, initialPhoto }: Props) {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
@@ -33,12 +35,12 @@ export default function Capture({ items, onApply, onClose }: Props) {
     setPreview(URL.createObjectURL(f));
   }
 
-  async function analyze() {
+  async function analyze(file: File | null = photo) {
     setBusy(true);
     setErr('');
     try {
       dict.stop();
-      const img = photo ? await imageToBase64(photo) : undefined;
+      const img = file ? await imageToBase64(file) : undefined;
       const out = await parseInventory({ text: text || undefined, image: img?.data, mediaType: img?.mediaType });
       if (!out.length) setErr('Nothing recognised — try adding a few details.');
       setProposals(out.map((p) => ({ ...p, key: crypto.randomUUID() })));
@@ -48,6 +50,15 @@ export default function Capture({ items, onApply, onClose }: Props) {
     }
     setBusy(false);
   }
+
+  const autoStarted = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount, guarded by a ref
+  useEffect(() => {
+    if (!initialPhoto || autoStarted.current) return;
+    autoStarted.current = true;
+    pickPhoto(initialPhoto);
+    void analyze(initialPhoto);
+  }, []);
 
   async function apply() {
     setBusy(true);
@@ -73,7 +84,7 @@ export default function Capture({ items, onApply, onClose }: Props) {
         !proposals ? (
           <>
             <span className="grow" />
-            <button type="button" className="primary wide" disabled={busy || (!text.trim() && !photo)} onClick={analyze}>
+            <button type="button" className="primary wide" disabled={busy || (!text.trim() && !photo)} onClick={() => analyze()}>
               {busy ? 'Analyzing…' : 'Analyze'}
             </button>
           </>

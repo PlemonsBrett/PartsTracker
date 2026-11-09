@@ -5,6 +5,7 @@ Ideas that are wanted but not built yet. Newest first within each section.
 ## Wanted
 
 ### Generated pinout diagrams (ICs, microcontrollers)
+
 Show a drawn pinout in a part's details instead of the plain "1 GAIN, 2 -INPUT, …" text, so it is easy to read at a glance.
 
 - Render an SVG of the package: chip body with pin 1 marked, pins numbered around it in the correct order, each labelled with its name. Colour or icon pins by role (power, ground, input, output, other).
@@ -14,8 +15,8 @@ Show a drawn pinout in a part's details instead of the plain "1 GAIN, 2 -INPUT, 
 - Pinouts are easy to get subtly wrong, so show the same "parsed from the datasheet, verify against the source" note, and link to the source page.
 - Possible extras: tap a pin to see its function; expose the structured pins through the MCP `get_datasheet` tool so agents get them too.
 
-## Ideas mentioned, not committed to
-- Install as a home-screen app (web manifest and icons).
-- Undo for quantity changes.
-- Swipe gestures on list rows.
-- Open the camera straight from the Capture button.
+## Done
+- Install as a home-screen app (web manifest and icons; no offline mode).
+- Undo for quantity changes (toast with Undo after any +/-, typed count or swipe).
+- Swipe gestures on list rows (right = +1, left = -1).
+- Camera button next to Capture: opens the camera and analyses the photo straight away.

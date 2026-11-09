@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Capture from './components/Capture';
 import ExportMenu from './components/ExportMenu';
 import ItemForm from './components/ItemForm';
@@ -11,6 +11,7 @@ import { applyProposals, createItem, deleteItem, listItems, updateItem } from '.
 import { searchItems } from './lib/search';
 import { configured, supabase } from './lib/supabase';
 import type { Item, ItemInput, Proposal } from './lib/types';
+import { nextUndo, type Undo } from './lib/undo';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -46,6 +47,9 @@ function Inventory() {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
+  const [cameraPhoto, setCameraPhoto] = useState<File | null>(null);
+  const [undo, setUndo] = useState<Undo | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -70,16 +74,35 @@ function Inventory() {
     return r;
   }, [items, query, category, lowOnly]);
 
-  // Optimistic quantity change; roll back by reloading if the write fails.
-  async function setQty(item: Item, qty: number) {
-    setItems((cur) => cur.map((i) => (i.id === item.id ? { ...i, quantity: qty } : i)));
+  // Optimistic quantity write; roll back by reloading if it fails.
+  async function writeQty(id: string, qty: number) {
+    setItems((cur) => cur.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
     try {
-      await updateItem(item.id, { quantity: qty });
+      await updateItem(id, { quantity: qty });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       reload();
     }
   }
+
+  // Row changes (buttons, typed count, swipe) offer a short-lived Undo.
+  function changeQty(item: Item, qty: number) {
+    setUndo((prev) => nextUndo(prev, item, qty));
+    void writeQty(item.id, qty);
+  }
+
+  function undoLast() {
+    if (!undo) return;
+    void writeQty(undo.id, undo.from);
+    setUndo(null);
+  }
+
+  // The Undo offer lapses after a few seconds (and restarts with every new change).
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), 6000);
+    return () => clearTimeout(t);
+  }, [undo]);
 
   const editing = editingId && editingId !== 'new' ? (items.find((i) => i.id === editingId) ?? null) : null;
 
@@ -190,12 +213,41 @@ function Inventory() {
       ) : (
         <ul className="list">
           {visible.map((i) => (
-            <ItemRow key={i.id} item={i} onQty={setQty} onEdit={(it) => setEditingId(it.id)} />
+            <ItemRow key={i.id} item={i} onQty={changeQty} onEdit={(it) => setEditingId(it.id)} />
           ))}
         </ul>
       )}
 
+      {undo && (
+        <div className="toast" role="status">
+          <span>
+            {undo.name}: {undo.from} → {undo.to}
+          </span>
+          <button type="button" onClick={undoLast}>
+            Undo
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = ''; // lets the same photo be picked again
+          if (file) {
+            setCameraPhoto(file);
+            setCapturing(true);
+          }
+        }}
+      />
       <div className="dock">
+        <button type="button" className="big icon-wide" aria-label="Take a photo" onClick={() => cameraRef.current?.click()}>
+          📷
+        </button>
         <button type="button" className="primary big" onClick={() => setCapturing(true)}>
           ✨ Capture
         </button>
@@ -220,7 +272,17 @@ function Inventory() {
           onClose={() => setEditingId(null)}
         />
       )}
-      {capturing && <Capture items={items} onApply={apply} onClose={() => setCapturing(false)} />}
+      {capturing && (
+        <Capture
+          items={items}
+          initialPhoto={cameraPhoto}
+          onApply={apply}
+          onClose={() => {
+            setCapturing(false);
+            setCameraPhoto(null);
+          }}
+        />
+      )}
     </main>
   );
 }
