@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toCSV, toMarkdown } from './export';
 import { plural } from './format';
-import { nextQuantity } from './items';
+import { mergeNote, nextQuantity } from './items';
 import { searchItems } from './search';
 import { swipeAction } from './swipe';
 import type { Item } from './types';
@@ -91,5 +91,16 @@ describe('swipeAction', () => {
   it('ignores mostly vertical movement (scrolling)', () => {
     expect(swipeAction(80, 70)).toBeNull();
     expect(swipeAction(-80, 120)).toBeNull();
+  });
+});
+
+describe('mergeNote', () => {
+  it('uses the note when the part has none', () => expect(mergeNote(null, ' Top pin unreadable ')).toBe('Top pin unreadable'));
+  it('appends below existing notes', () =>
+    expect(mergeNote('Bought at Micro Center', 'Chip marking HM-10')).toBe('Bought at Micro Center\nChip marking HM-10'));
+  it('does not repeat a note that is already saved', () => expect(mergeNote('Chip marking HM-10', 'Chip marking HM-10')).toBeNull());
+  it('does nothing without a note', () => {
+    expect(mergeNote('x', undefined)).toBeNull();
+    expect(mergeNote('x', '   ')).toBeNull();
   });
 });

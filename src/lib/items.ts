@@ -26,6 +26,18 @@ export async function deleteItem(id: string) {
 
 const FILLABLE = ['category', 'value', 'package', 'part_number', 'manufacturer', 'location', 'description'] as const;
 
+/**
+ * Adds a capture note to a part's existing notes without overwriting them.
+ * Returns null when there is nothing new to save (no note, or it is already there).
+ */
+export function mergeNote(existing: string | null | undefined, note: string | null | undefined): string | null {
+  const add = note?.trim();
+  if (!add) return null;
+  const current = existing?.trim() ?? '';
+  if (current.includes(add)) return null;
+  return current ? `${current}\n${add}` : add;
+}
+
 export function nextQuantity(current: number, p: Pick<Proposal, 'op' | 'quantity'>) {
   if (p.op === 'set') return Math.max(0, p.quantity);
   return Math.max(0, current + (p.op === 'add' ? p.quantity : -p.quantity));
@@ -41,11 +53,15 @@ export async function applyProposals(proposals: Proposal[], items: Item[]): Prom
     if (existing) {
       const patch: Partial<ItemInput> = { quantity: nextQuantity(existing.quantity, p) };
       for (const f of FILLABLE) if (!existing[f] && p[f]) patch[f] = p[f];
+      const notes = mergeNote(existing.notes, p.note);
+      if (notes) patch.notes = notes;
       await updateItem(existing.id, patch);
     } else {
       if (p.op === 'remove') continue; // nothing to remove from
       const input: ItemInput = { name: p.name, quantity: Math.max(0, p.quantity) };
       for (const f of FILLABLE) if (p[f]) input[f] = p[f];
+      const notes = mergeNote(null, p.note);
+      if (notes) input.notes = notes;
       created.push(await createItem(input));
     }
   }
