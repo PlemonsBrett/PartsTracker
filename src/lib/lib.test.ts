@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toCSV, toMarkdown } from './export';
+import { plural } from './format';
 import { nextQuantity } from './items';
 import { searchItems } from './search';
 import type { Item } from './types';
@@ -47,4 +48,14 @@ describe('nextQuantity', () => {
 describe('export', () => {
   it('escapes CSV', () => expect(toCSV([mk({ name: 'a,"b"' })]).split('\n')[1]).toMatch(/^"a,""b""",/));
   it('renders a markdown table', () => expect(toMarkdown(items)).toContain('| Resistor | 1 | Resistor | 10kΩ | 0805 |'));
+});
+
+describe('plural', () => {
+  it('uses the singular only for exactly one', () => {
+    expect(plural(1, 'part')).toBe('1 part');
+    expect(plural(1, 'unit')).toBe('1 unit');
+    expect(plural(0, 'part')).toBe('0 parts');
+    expect(plural(2, 'unit')).toBe('2 units');
+  });
+  it('supports irregular plurals', () => expect(plural(2, 'box', 'boxes')).toBe('2 boxes'));
 });

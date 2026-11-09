@@ -54,33 +54,20 @@ export default function ItemForm({ item, onSave, onDelete, onClose, onChanged }:
     }
   }
 
+  const field = (k: string, label: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <label>
+      {label}
+      <input value={v[k]} onChange={set(k)} {...extra} />
+    </label>
+  );
+
   return (
-    <Modal label={item ? 'Edit part' : 'Add part'} onClose={onClose}>
-      <form className="stack" onSubmit={submit}>
-        <h2>{item ? 'Edit part' : 'Add part'}</h2>
-        <label>
-          Name
-          <input value={v.name} onChange={set('name')} required />
-        </label>
-        <div className="two">
-          <label>
-            Quantity
-            <input type="number" min={0} inputMode="numeric" value={v.quantity} onChange={set('quantity')} />
-          </label>
-          <label>
-            Low-stock at
-            <input type="number" min={0} inputMode="numeric" value={v.min_quantity} onChange={set('min_quantity')} />
-          </label>
-        </div>
-        {FIELDS.map(([k, label]) => (
-          <label key={k}>
-            {label}
-            <input value={v[k]} onChange={set(k)} />
-          </label>
-        ))}
-        {item && onChanged && <DatasheetPanel item={item} onChanged={onChanged} />}
-        {err && <p className="msg">{err}</p>}
-        <div className="actions">
+    <Modal
+      title={item ? 'Edit part' : 'Add part'}
+      onClose={onClose}
+      onSubmit={submit}
+      footer={
+        <>
           {item && onDelete && (
             <button
               type="button"
@@ -97,14 +84,48 @@ export default function ItemForm({ item, onSave, onDelete, onClose, onChanged }:
             </button>
           )}
           <span className="grow" />
-          <button type="button" onClick={onClose}>
-            Cancel
+          <button type="submit" className="primary wide" disabled={busy}>
+            {busy ? 'Saving…' : 'Save'}
           </button>
-          <button type="submit" className="primary" disabled={busy}>
-            Save
-          </button>
+        </>
+      }
+    >
+      <label>
+        Name
+        <input value={v.name} onChange={set('name')} required enterKeyHint="next" />
+      </label>
+      <div className="grid2">
+        <label>
+          Quantity
+          <input type="number" min={0} inputMode="numeric" value={v.quantity} onChange={set('quantity')} />
+        </label>
+        <label>
+          Low-stock at
+          <input type="number" min={0} inputMode="numeric" value={v.min_quantity} onChange={set('min_quantity')} />
+        </label>
+      </div>
+      <div className="grid2">
+        {field('category', 'Category')}
+        {field('location', 'Location')}
+      </div>
+      <div className="grid2">
+        {field('value', 'Value', { placeholder: '10kΩ, 100nF…' })}
+        {field('package', 'Package', { placeholder: '0805, DIP-8…' })}
+      </div>
+      <div className="grid2">
+        {field('part_number', 'Part number', { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
+        {field('manufacturer', 'Manufacturer')}
+      </div>
+      {item && onChanged && <DatasheetPanel item={item} onChanged={onChanged} />}
+      <details className="more">
+        <summary>More details</summary>
+        <div className="stack">
+          {field('datasheet_url', 'Datasheet URL', { inputMode: 'url', autoCapitalize: 'none', autoCorrect: 'off' })}
+          {field('description', 'Description')}
+          {field('notes', 'Notes')}
         </div>
-      </form>
+      </details>
+      {err && <p className="msg">{err}</p>}
     </Modal>
   );
 }

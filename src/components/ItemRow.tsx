@@ -23,9 +23,13 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
     <li className={`row${item.quantity === 0 ? ' empty' : ''}`}>
       <button type="button" className="info" onClick={() => onEdit(item)} aria-label={`Edit ${item.name}`}>
         <strong>{item.name}</strong>
-        {item.category && <span className="tag">{item.category}</span>}
-        {low && <span className="tag warn">low</span>}
-        {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
+        {(item.category || low || item.fact_sheet || item.datasheet_path) && (
+          <span className="tags">
+            {item.category && <span className="tag">{item.category}</span>}
+            {low && <span className="tag warn">low</span>}
+            {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
+          </span>
+        )}
         {meta && <small>{meta}</small>}
       </button>
       <div className="qty">

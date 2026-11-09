@@ -63,110 +63,114 @@ export default function Capture({ items, onApply, onClose }: Props) {
 
   const edit = (i: number, patch: Partial<Proposal>) => setProposals(proposals!.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
+  const chosen = picked.filter(Boolean).length;
+
   return (
-    <Modal label="Quick capture" onClose={onClose}>
-      <div className="stack">
-        <h2>Quick capture</h2>
-        {!proposals ? (
+    <Modal
+      title="Quick capture"
+      onClose={onClose}
+      footer={
+        !proposals ? (
           <>
-            <p className="hint">Snap a photo, type, or dictate — e.g. “bought 50 10k 0805 resistors, bin A3” or “used 4 ATmega328P”.</p>
-            <div className="capture-tools">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                hidden
-                onChange={(e) => pickPhoto(e.target.files?.[0])}
-              />
-              <button type="button" onClick={() => fileRef.current?.click()}>
-                📷 Photo
-              </button>
-              {dict.supported ? (
-                <button type="button" className={dict.listening ? 'rec' : ''} onClick={dict.listening ? dict.stop : dict.start}>
-                  {dict.listening ? '⏹ Stop' : '🎤 Dictate'}
-                </button>
-              ) : (
-                <small>Voice not supported in this browser</small>
-              )}
-            </div>
-            {preview && <img className="preview" src={preview} alt="Selected part" />}
-            <textarea
-              rows={4}
-              placeholder="Describe what you're adding or using…"
-              value={text + (dict.interim ? ` ${dict.interim}` : '')}
-              onChange={(e) => setText(e.target.value)}
-            />
-            {err && <p className="msg">{err}</p>}
-            <div className="actions">
-              <span className="grow" />
-              <button type="button" onClick={onClose}>
-                Cancel
-              </button>
-              <button type="button" className="primary" disabled={busy || (!text.trim() && !photo)} onClick={analyze}>
-                {busy ? 'Analyzing…' : 'Analyze'}
-              </button>
-            </div>
+            <span className="grow" />
+            <button type="button" className="primary wide" disabled={busy || (!text.trim() && !photo)} onClick={analyze}>
+              {busy ? 'Analyzing…' : 'Analyze'}
+            </button>
           </>
         ) : (
           <>
-            <p className="hint">Review before saving. Uncheck anything wrong or fix the numbers.</p>
-            <ul className="proposals">
-              {proposals.map((p, i) => {
-                const match = nameOf(p.item_id);
-                return (
-                  <li key={p.key}>
-                    <label className="pick">
-                      <input
-                        type="checkbox"
-                        checked={picked[i]}
-                        onChange={(e) => setPicked(picked.map((x, j) => (j === i ? e.target.checked : x)))}
-                      />
-                      <span>
-                        <strong>{match ? match.name : p.name}</strong>
-                        <small>
-                          {match ? `existing · now ${match.quantity}` : 'new item'}
-                          {[p.value, p.package, p.location]
-                            .filter(Boolean)
-                            .map((x) => ` · ${x}`)
-                            .join('')}
-                        </small>
-                        {p.note && <small className="warn-text">⚠ {p.note}</small>}
-                      </span>
-                    </label>
-                    <div className="op">
-                      <select value={p.op} onChange={(e) => edit(i, { op: e.target.value as Proposal['op'] })}>
-                        {Object.entries(OP_LABEL).map(([k, l]) => (
-                          <option key={k} value={k}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        value={p.quantity}
-                        onChange={(e) => edit(i, { quantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            {err && <p className="msg">{err}</p>}
-            <div className="actions">
-              <button type="button" onClick={() => setProposals(null)}>
-                Back
-              </button>
-              <span className="grow" />
-              <button type="button" className="primary" disabled={busy || !picked.some(Boolean)} onClick={apply}>
-                {busy ? 'Saving…' : `Apply ${picked.filter(Boolean).length}`}
-              </button>
-            </div>
+            <button type="button" onClick={() => setProposals(null)}>
+              Back
+            </button>
+            <span className="grow" />
+            <button type="button" className="primary wide" disabled={busy || chosen === 0} onClick={apply}>
+              {busy ? 'Saving…' : `Apply ${chosen}`}
+            </button>
           </>
-        )}
-      </div>
+        )
+      }
+    >
+      {!proposals ? (
+        <>
+          <p className="hint">Snap a photo, type, or dictate — e.g. “bought 50 10k 0805 resistors, bin A3” or “used 4 ATmega328P”.</p>
+          <div className="capture-tools">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => pickPhoto(e.target.files?.[0])}
+            />
+            <button type="button" onClick={() => fileRef.current?.click()}>
+              📷 {photo ? 'Retake' : 'Photo'}
+            </button>
+            {dict.supported ? (
+              <button type="button" className={dict.listening ? 'rec' : ''} onClick={dict.listening ? dict.stop : dict.start}>
+                {dict.listening ? '⏹ Stop' : '🎤 Dictate'}
+              </button>
+            ) : (
+              <small>Voice not supported in this browser</small>
+            )}
+          </div>
+          {preview && <img className="preview" src={preview} alt="Selected part" />}
+          <textarea
+            rows={4}
+            placeholder="Describe what you're adding or using…"
+            value={text + (dict.interim ? ` ${dict.interim}` : '')}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {err && <p className="msg">{err}</p>}
+        </>
+      ) : (
+        <>
+          <p className="hint">Review before saving. Uncheck anything wrong or fix the numbers.</p>
+          <ul className="proposals">
+            {proposals.map((p, i) => {
+              const match = nameOf(p.item_id);
+              return (
+                <li key={p.key}>
+                  <label className="pick">
+                    <input
+                      type="checkbox"
+                      checked={picked[i]}
+                      onChange={(e) => setPicked(picked.map((x, j) => (j === i ? e.target.checked : x)))}
+                    />
+                    <span>
+                      <strong>{match ? match.name : p.name}</strong>
+                      <small>
+                        {match ? `existing · now ${match.quantity}` : 'new item'}
+                        {[p.value, p.package, p.location]
+                          .filter(Boolean)
+                          .map((x) => ` · ${x}`)
+                          .join('')}
+                      </small>
+                      {p.note && <small className="warn-text">⚠ {p.note}</small>}
+                    </span>
+                  </label>
+                  <div className="op">
+                    <select value={p.op} onChange={(e) => edit(i, { op: e.target.value as Proposal['op'] })}>
+                      {Object.entries(OP_LABEL).map(([k, l]) => (
+                        <option key={k} value={k}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={p.quantity}
+                      onChange={(e) => edit(i, { quantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {err && <p className="msg">{err}</p>}
+        </>
+      )}
     </Modal>
   );
 }
