@@ -35,6 +35,10 @@ function makeStore(): Store {
     remove: async (id) => {
       check(await t().delete().eq('user_id', owner).eq('id', id));
     },
+    signedDatasheetUrl: async (path) => {
+      const { data, error } = await sb.storage.from('datasheets').createSignedUrl(path, 3600);
+      return error ? null : data.signedUrl;
+    },
   };
 }
 

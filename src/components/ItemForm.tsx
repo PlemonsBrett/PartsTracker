@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Item, ItemInput } from '../lib/types';
+import DatasheetPanel from './DatasheetPanel';
 import Modal from './Modal';
 
 const FIELDS: [keyof ItemInput, string][] = [
@@ -19,9 +20,11 @@ interface Props {
   onSave: (input: ItemInput) => Promise<void>;
   onDelete?: () => Promise<void>;
   onClose: () => void;
+  /** Called after the datasheet changes so the parent can refresh its list. */
+  onChanged?: () => Promise<void>;
 }
 
-export default function ItemForm({ item, onSave, onDelete, onClose }: Props) {
+export default function ItemForm({ item, onSave, onDelete, onClose, onChanged }: Props) {
   const [v, setV] = useState<Record<string, string>>(() => ({
     name: item?.name ?? '',
     quantity: String(item?.quantity ?? 1),
@@ -75,6 +78,7 @@ export default function ItemForm({ item, onSave, onDelete, onClose }: Props) {
             <input value={v[k]} onChange={set(k)} />
           </label>
         ))}
+        {item && onChanged && <DatasheetPanel item={item} onChanged={onChanged} />}
         {err && <p className="msg">{err}</p>}
         <div className="actions">
           {item && onDelete && (

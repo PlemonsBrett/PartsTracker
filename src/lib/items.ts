@@ -32,7 +32,9 @@ export function nextQuantity(current: number, p: Pick<Proposal, 'op' | 'quantity
 }
 
 /** Applies reviewed proposals. Existing items only get blank fields filled, never overwritten. */
-export async function applyProposals(proposals: Proposal[], items: Item[]) {
+/** Applies reviewed proposals and returns the items that were newly created. */
+export async function applyProposals(proposals: Proposal[], items: Item[]): Promise<Item[]> {
+  const created: Item[] = [];
   const byId = new Map(items.map((i) => [i.id, i]));
   for (const p of proposals) {
     const existing = p.item_id ? byId.get(p.item_id) : undefined;
@@ -44,9 +46,10 @@ export async function applyProposals(proposals: Proposal[], items: Item[]) {
       if (p.op === 'remove') continue; // nothing to remove from
       const input: ItemInput = { name: p.name, quantity: Math.max(0, p.quantity) };
       for (const f of FILLABLE) if (p[f]) input[f] = p[f];
-      await createItem(input);
+      created.push(await createItem(input));
     }
   }
+  return created;
 }
 
 export async function parseInventory(args: { text?: string; image?: string; mediaType?: string }): Promise<Proposal[]> {

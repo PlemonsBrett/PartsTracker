@@ -359,3 +359,48 @@ button.rec {
 .menu-backdrop {
   z-index: 4;
 }
+.datasheet {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+.datasheet h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.datasheet p {
+  margin: 0;
+}
+.facts {
+  display: grid;
+  gap: 8px;
+}
+.specs {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.specs > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 3px 0;
+}
+.specs dt {
+  color: var(--muted);
+}
+.specs dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.facts ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.facts small {
+  color: var(--muted);
+}

@@ -55,7 +55,11 @@ Deno.serve(async (req) => {
   if (!expected || !safeEqual(given, expected)) return new Response('Unauthorized', { status: 401 });
 
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  let query = sb.from('items').select(COLS.join(',')).order('category').order('name');
+  let query = sb
+    .from('items')
+    .select([...COLS, 'fact_sheet'].join(','))
+    .order('category')
+    .order('name');
   const owner = Deno.env.get('OWNER_USER_ID');
   if (owner) query = query.eq('user_id', owner);
   const { data, error } = await query;

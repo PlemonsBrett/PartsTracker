@@ -35,6 +35,7 @@ const store: Store = {
   remove: async (id) => {
     rows = rows.filter((r) => r.id !== id);
   },
+  signedDatasheetUrl: async (path) => `https://signed.example/${path}?token=t`,
 };
 const call = async (name: string, args: object = {}) => {
   const res = (await handleMessage({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }, store)) as any;
@@ -108,6 +109,33 @@ describe('tools', () => {
     expect(rows).toHaveLength(2);
     await call('delete_item', { id: 'm1', confirm: true });
     expect(rows).toHaveLength(1);
+  });
+  it('get_datasheet returns parsed facts, a signed PDF link, or a clear "none"', async () => {
+    const facts = {
+      summary: 'Dual op amp',
+      specs: [{ name: 'Supply', value: '3-32 V' }],
+      features: [],
+      pinout: null,
+      source_url: 'https://ti.com/a.pdf',
+      extracted_at: '',
+    };
+    rows[1].fact_sheet = facts;
+    const withFacts = JSON.parse((await call('get_datasheet', { id: 'm1' })).text);
+    expect(withFacts.fact_sheet.specs[0].value).toBe('3-32 V');
+    expect(withFacts.pdf_url).toBeNull();
+
+    rows[1].fact_sheet = null;
+    rows[1].datasheet_path = 'user/m1.pdf';
+    expect(JSON.parse((await call('get_datasheet', { id: 'm1' })).text).pdf_url).toContain('user/m1.pdf');
+
+    rows[1].datasheet_path = null;
+    expect(JSON.parse((await call('get_datasheet', { id: 'm1' })).text).note).toMatch(/No datasheet/);
+    expect((await call('get_datasheet', { id: 'zzz' })).err).toBe(true);
+  });
+  it('search results flag which parts have a fact sheet', async () => {
+    rows[1].fact_sheet = { summary: 's', specs: [], features: [], pinout: null, source_url: 'https://a.com', extracted_at: '' };
+    const items = JSON.parse((await call('search_items', { query: 'atmega' })).text).items;
+    expect(items[0].has_fact_sheet).toBe(true);
   });
   it('export md is a table', async () =>
     expect((await call('export_inventory')).text).toContain('| 10k resistor | 100 | Resistor | 10kΩ | 0805 |'));

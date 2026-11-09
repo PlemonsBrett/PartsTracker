@@ -17,7 +17,7 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
    npx supabase login && npx supabase link --project-ref <ref>
    npx supabase db push                                   # creates tables + RLS
    npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... EXPORT_API_KEY=$(openssl rand -hex 24) MCP_API_KEY=$(openssl rand -hex 24)
-   npx supabase functions deploy parse-inventory inventory-export mcp
+   npx supabase functions deploy parse-inventory inventory-export mcp find-datasheet
    ```
 
    Create your account via the app, then **turn off "Allow new users to sign up"** (Auth → Providers → Email) so it stays single-user. Then `npx supabase secrets set OWNER_USER_ID=<your auth uid>` (Auth → Users). The MCP server requires it; the export endpoint uses it to limit results to your rows.
@@ -29,6 +29,16 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
 - **✨ Capture**: 📷 photo of a bag/part/label, 🎤 dictate, or type (“used 4 ATmega328P”, “bought 50 10k 0805, bin A3”). Review the proposed changes, then Apply.
 - **Search**: all terms must match across name, value, package, part number, location, etc. (`10k 0805`). Category chips and a Low-stock filter sit below.
 - **Quantities**: − / + buttons, or tap the number to type an exact count. Every change is logged in `inventory_events`.
+
+## Datasheets
+
+Each part can have a **fact sheet**: a short summary plus the key specs (supply voltage, current, package, pinout, ratings…) parsed from its datasheet, so you or an agent don't have to read the whole PDF.
+
+- After ✨ Capture creates parts that have a part number, PartsTracker looks them up in the background. The 📄 **Find datasheets** chip does the same for existing parts (10 at a time), and each part has Find / Look up again / Remove.
+- `find-datasheet` uses Claude with web search + web fetch to locate the manufacturer's datasheet and extract the specs. A lookup is rejected if the confidence is low or the reported URL's host never appeared in the search results. Generic parts (a plain 10k resistor) are skipped.
+- Only if specs can't be extracted is the PDF itself downloaded (https only, size-capped, private `datasheets` bucket) and attached.
+- The source link is always kept. Verify critical values against it.
+- Each lookup is a web-search request, so it costs more than a capture. It needs web search enabled for your Anthropic organization (Console → Settings → Privacy).
 
 ## Export for agents
 

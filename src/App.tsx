@@ -5,6 +5,7 @@ import ExportMenu from './components/ExportMenu';
 import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
+import { findDatasheet, wantsLookup } from './lib/datasheets';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
 import { searchItems } from './lib/search';
 import { configured, supabase } from './lib/supabase';
@@ -41,7 +42,8 @@ function Inventory() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [lowOnly, setLowOnly] = useState(false);
-  const [editing, setEditing] = useState<Item | 'new' | null>(null);
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -78,17 +80,38 @@ function Inventory() {
     }
   }
 
+  const editing = editingId && editingId !== 'new' ? (items.find((i) => i.id === editingId) ?? null) : null;
+
   async function save(input: ItemInput) {
-    if (editing && editing !== 'new') await updateItem(editing.id, input);
+    if (editing) await updateItem(editing.id, input);
     else await createItem(input);
     await reload();
   }
 
   async function apply(p: Proposal[]) {
-    await applyProposals(p, items);
+    const created = await applyProposals(p, items);
+    await reload();
+    void attachDatasheets(created.filter(wantsLookup)); // runs in the background
+  }
+
+  // Looks up datasheets one at a time (each is a web search) and reports progress.
+  async function attachDatasheets(list: Item[]) {
+    if (!list.length) return;
+    let found = 0;
+    try {
+      for (const [n, item] of list.entries()) {
+        setNote(`Finding datasheets… ${n + 1}/${list.length}`);
+        if ((await findDatasheet(item.id)).status === 'found') found++;
+      }
+      setNote(found ? `Attached ${found} datasheet${found > 1 ? 's' : ''}.` : 'No datasheets found.');
+    } catch (e) {
+      setNote('');
+      setError(e instanceof Error ? e.message : String(e));
+    }
     await reload();
   }
 
+  const missing = items.filter(wantsLookup);
   const total = items.reduce((n, i) => n + i.quantity, 0);
 
   return (
@@ -118,7 +141,7 @@ function Inventory() {
         <button type="button" className="primary" onClick={() => setCapturing(true)}>
           ✨ Capture
         </button>
-        <button type="button" onClick={() => setEditing('new')}>
+        <button type="button" onClick={() => setEditingId('new')}>
           ＋ Add
         </button>
       </div>
@@ -137,6 +160,15 @@ function Inventory() {
         <button type="button" className={lowOnly ? 'on' : ''} onClick={() => setLowOnly(!lowOnly)}>
           Low stock
         </button>
+        {missing.length > 0 && (
+          <button
+            type="button"
+            onClick={() => attachDatasheets(missing.slice(0, 10))}
+            disabled={Boolean(note) && note.startsWith('Finding')}
+          >
+            📄 Find datasheets ({missing.length})
+          </button>
+        )}
         {categories.map((c) => (
           <button type="button" key={c} className={category === c ? 'on' : ''} onClick={() => setCategory(category === c ? '' : c)}>
             {c}
@@ -145,6 +177,11 @@ function Inventory() {
       </div>
 
       {error && <p className="msg">{error}</p>}
+      {note && (
+        <p className="hint" role="status">
+          {note}
+        </p>
+      )}
       {loading ? (
         <p className="hint">Loading…</p>
       ) : visible.length === 0 ? (
@@ -152,24 +189,25 @@ function Inventory() {
       ) : (
         <ul className="list">
           {visible.map((i) => (
-            <ItemRow key={i.id} item={i} onQty={setQty} onEdit={setEditing} />
+            <ItemRow key={i.id} item={i} onQty={setQty} onEdit={(i) => setEditingId(i.id)} />
           ))}
         </ul>
       )}
 
-      {editing && (
+      {editingId && (editingId === 'new' || editing) && (
         <ItemForm
-          item={editing === 'new' ? undefined : editing}
+          item={editing ?? undefined}
           onSave={save}
+          onChanged={reload}
           onDelete={
-            editing !== 'new'
+            editing
               ? async () => {
                   await deleteItem(editing.id);
                   await reload();
                 }
               : undefined
           }
-          onClose={() => setEditing(null)}
+          onClose={() => setEditingId(null)}
         />
       )}
       {capturing && <Capture items={items} onApply={apply} onClose={() => setCapturing(false)} />}

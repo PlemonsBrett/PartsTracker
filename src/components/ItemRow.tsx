@@ -25,6 +25,7 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
         <strong>{item.name}</strong>
         {item.category && <span className="tag">{item.category}</span>}
         {low && <span className="tag warn">low</span>}
+        {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
         {meta && <small>{meta}</small>}
       </button>
       <div className="qty">
