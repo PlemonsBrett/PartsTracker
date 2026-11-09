@@ -93,3 +93,5 @@ curl -s https://<ref>.supabase.co/functions/v1/mcp -H "Authorization: Bearer $MC
 - Edge functions: `deno check supabase/functions/*/index.ts`
 - CI (`.github/workflows/ci.yml`) runs all of the above on every pull request. Deploys happen only from `main`.
 - The MCP logic lives in `supabase/functions/mcp/core.ts` with no Deno dependencies, so it is unit-tested under vitest.
+
+Planned features are tracked in [ROADMAP.md](ROADMAP.md).
