@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { cleanTranscript, makeProgress } from './audio';
 import { toCSV, toMarkdown } from './export';
 import { plural } from './format';
 import { needsInvestigation, toggleDone } from './investigate';
 import { mergeNote, nextQuantity, unknownsOf } from './items';
 import { acceptedCount, buildPatch, type Refinement } from './refine';
 import { searchItems } from './search';
+import { actionFor, isTypingTarget, moveSelection } from './shortcuts';
 import { swipeAction } from './swipe';
 import { cleanTool } from './tools';
 import type { Item } from './types';
@@ -197,4 +199,103 @@ describe('cleanTool', () => {
     expect(cleanTool({ kind: 'other', name: 'x', notes: 'y'.repeat(900) })?.notes).toHaveLength(600);
   });
   it('needs a name', () => expect(cleanTool({ kind: 'other', name: '   ', notes: 'n' })).toBeNull());
+});
+
+describe('cleanTranscript', () => {
+  it('trims and collapses whitespace', () =>
+    expect(cleanTranscript('  bought   fifty 10k   resistors \n')).toBe('bought fifty 10k resistors'));
+  it('drops the markers Whisper writes for silence', () => {
+    for (const t of ['[BLANK_AUDIO]', ' [BLANK_AUDIO] ', '(silence)', '[ Silence ]', '*music*', '♪', '', '   '])
+      expect(cleanTranscript(t), t).toBe('');
+    expect(cleanTranscript(null)).toBe('');
+  });
+  it('keeps real speech, including text with brackets or numbers', () => {
+    expect(cleanTranscript('Used four ATmega328P.')).toBe('Used four ATmega328P.');
+    expect(cleanTranscript('Added the 10k resistor (0805) to bin A3')).toBe('Added the 10k resistor (0805) to bin A3');
+  });
+});
+
+describe('makeProgress', () => {
+  it('combines per-file downloads into one percentage', () => {
+    const p = makeProgress();
+    expect(p('a.onnx', 50, 100)).toBe(50);
+    expect(p('b.onnx', 0, 100)).toBe(25);
+    expect(p('b.onnx', 100, 100)).toBe(75);
+    expect(p('a.onnx', 100, 100)).toBe(100);
+  });
+  it('is 0 before sizes are known and never passes 100', () => {
+    const p = makeProgress();
+    expect(p('a', 0, 0)).toBe(0);
+    expect(p('a', 150, 100)).toBe(100);
+  });
+});
+
+describe('keyboard shortcuts', () => {
+  const key = (k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) => ({
+    key: k,
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    ...mods,
+  });
+  const free = { typing: false, modalOpen: false, inSearch: false };
+
+  it('maps single keys to commands on the list', () => {
+    const want: Record<string, string> = {
+      '/': 'search',
+      c: 'capture',
+      n: 'add',
+      j: 'next',
+      ArrowDown: 'next',
+      k: 'prev',
+      ArrowUp: 'prev',
+      Enter: 'open',
+      '+': 'inc',
+      '=': 'inc',
+      '-': 'dec',
+      '?': 'help',
+      Escape: 'clear',
+    };
+    for (const [k, a] of Object.entries(want)) expect(actionFor(key(k), free), k).toBe(a);
+    expect(actionFor(key('x'), free)).toBeNull();
+  });
+  it('does nothing while typing in a field or while a dialog is open', () => {
+    expect(actionFor(key('c'), { ...free, typing: true })).toBeNull();
+    expect(actionFor(key('c'), { ...free, modalOpen: true })).toBeNull();
+    expect(actionFor(key('Escape'), { ...free, modalOpen: true })).toBeNull();
+  });
+  it('leaves browser shortcuts alone when Ctrl, Cmd or Alt is held', () => {
+    for (const mods of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }]) expect(actionFor(key('c', mods), free)).toBeNull();
+  });
+  it('in the search box only arrows, Enter and Escape act', () => {
+    const search = { typing: true, modalOpen: false, inSearch: true };
+    expect(actionFor(key('ArrowDown'), search)).toBe('next');
+    expect(actionFor(key('Enter'), search)).toBe('open');
+    expect(actionFor(key('Escape'), search)).toBe('clear');
+    expect(actionFor(key('c'), search)).toBeNull();
+    expect(actionFor(key('j'), search)).toBeNull();
+  });
+  it('recognises text fields but not checkboxes or buttons', () => {
+    const el = (tagName: string, type = '') => ({ tagName, type, isContentEditable: false }) as unknown as Element;
+    expect(isTypingTarget(el('INPUT', 'text'))).toBe(true);
+    expect(isTypingTarget(el('INPUT', 'search'))).toBe(true);
+    expect(isTypingTarget(el('TEXTAREA'))).toBe(true);
+    expect(isTypingTarget(el('SELECT'))).toBe(true);
+    expect(isTypingTarget(el('INPUT', 'checkbox'))).toBe(false);
+    expect(isTypingTarget(el('BUTTON'))).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
+  });
+});
+
+describe('moveSelection', () => {
+  it('first press selects the first or last row', () => {
+    expect(moveSelection(-1, 5, 1)).toBe(0);
+    expect(moveSelection(-1, 5, -1)).toBe(4);
+  });
+  it('moves one row and stops at the ends', () => {
+    expect(moveSelection(2, 5, 1)).toBe(3);
+    expect(moveSelection(4, 5, 1)).toBe(4);
+    expect(moveSelection(0, 5, -1)).toBe(0);
+  });
+  it('has nothing to select in an empty list', () => expect(moveSelection(0, 0, 1)).toBe(-1));
 });

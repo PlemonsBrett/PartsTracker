@@ -3,6 +3,7 @@ import { useDictation } from '../lib/dictation';
 import { imageToBase64 } from '../lib/items';
 import { type Accepted, acceptedCount, applyRefinement, FIELD_LABEL, type RefineField, type Refinement, refineItem } from '../lib/refine';
 import type { Item } from '../lib/types';
+import DictationStatus from './DictationStatus';
 import Modal from './Modal';
 import Pinout from './Pinout';
 
@@ -95,7 +96,12 @@ export default function Refine({ item, initialText = '', onApplied, onClose }: P
         !result ? (
           <>
             <span className="grow" />
-            <button type="button" className="primary wide" disabled={busy || (photos.length === 0 && !text.trim())} onClick={analyze}>
+            <button
+              type="button"
+              className="primary wide"
+              disabled={busy || (dict.engine === 'local' && (dict.listening || dict.transcribing)) || (photos.length === 0 && !text.trim())}
+              onClick={analyze}
+            >
               {busy ? 'Analyzing…' : 'Analyze'}
             </button>
           </>
@@ -128,11 +134,17 @@ export default function Refine({ item, initialText = '', onApplied, onClose }: P
               🖼 Photos
             </button>
             {dict.supported && (
-              <button type="button" className={dict.listening ? 'rec' : ''} onClick={dict.listening ? dict.stop : dict.start}>
-                {dict.listening ? '⏹ Stop' : '🎤'}
+              <button
+                type="button"
+                className={`dictate${dict.listening ? ' rec' : ''}`}
+                disabled={dict.transcribing}
+                onClick={dict.listening ? dict.stop : dict.start}
+              >
+                {dict.listening ? '⏹ Stop' : dict.transcribing ? 'Working…' : '🎤 Dictate'}
               </button>
             )}
           </div>
+          <DictationStatus dict={dict} />
           {photos.length > 0 && (
             <ul className="photos" aria-label="Photos to analyze">
               {photos.map((p) => (

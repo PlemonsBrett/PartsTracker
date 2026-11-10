@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDictation } from '../lib/dictation';
 import { imageToBase64, parseInventory, unknownsOf } from '../lib/items';
+import { readDictateOnOpen, writeDictateOnOpen } from '../lib/prefs';
+import { hasFinePointer } from '../lib/shortcuts';
 import type { Item, Proposal } from '../lib/types';
+import DictationStatus from './DictationStatus';
 import Modal from './Modal';
 
 type Row = Proposal & { key: string };
@@ -25,6 +28,8 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const [dictateOnOpen, setDictateOnOpen] = useState(readDictateOnOpen);
   const nameOf = (id: string | null) => items.find((i) => i.id === id);
 
   const dict = useDictation((t) => setText((prev) => (prev ? `${prev} ` : '') + t));
@@ -51,6 +56,14 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
     setBusy(false);
   }
 
+  // On a computer, start with the cursor in the box, and with dictation running if that is the owner's habit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once when the dialog opens
+  useEffect(() => {
+    if (initialPhoto) return;
+    if (hasFinePointer()) textRef.current?.focus();
+    if (dictateOnOpen && dict.supported) dict.start();
+  }, []);
+
   const autoStarted = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount, guarded by a ref
   useEffect(() => {
@@ -75,6 +88,23 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
   const edit = (i: number, patch: Partial<Proposal>) => setProposals(proposals!.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
   const chosen = picked.filter(Boolean).length;
+  // With on-device dictation the words arrive after Stop, so analysing now would leave the last sentence out.
+  const waitingForSpeech = dict.engine === 'local' && (dict.listening || dict.transcribing);
+  const canAnalyze = !busy && !waitingForSpeech && (Boolean(text.trim()) || Boolean(photo));
+
+  // Ctrl/Cmd+Enter does whatever the main button does.
+  const primary = useRef<() => void>(() => undefined);
+  primary.current = () => (proposals ? (!busy && chosen > 0 ? void apply() : undefined) : canAnalyze ? void analyze() : undefined);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        primary.current();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <Modal
@@ -84,8 +114,8 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
         !proposals ? (
           <>
             <span className="grow" />
-            <button type="button" className="primary wide" disabled={busy || (!text.trim() && !photo)} onClick={() => analyze()}>
-              {busy ? 'Analyzing…' : 'Analyze'}
+            <button type="button" className="primary wide" disabled={!canAnalyze} onClick={() => analyze()}>
+              {busy ? 'Analyzing…' : 'Analyze'} <kbd>Ctrl ↵</kbd>
             </button>
           </>
         ) : (
@@ -95,7 +125,7 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
             </button>
             <span className="grow" />
             <button type="button" className="primary wide" disabled={busy || chosen === 0} onClick={apply}>
-              {busy ? 'Saving…' : `Apply ${chosen}`}
+              {busy ? 'Saving…' : `Apply ${chosen}`} <kbd>Ctrl ↵</kbd>
             </button>
           </>
         )
@@ -117,15 +147,35 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
               📷 {photo ? 'Retake' : 'Photo'}
             </button>
             {dict.supported ? (
-              <button type="button" className={dict.listening ? 'rec' : ''} onClick={dict.listening ? dict.stop : dict.start}>
-                {dict.listening ? '⏹ Stop' : '🎤 Dictate'}
+              <button
+                type="button"
+                className={`dictate${dict.listening ? ' rec' : ''}`}
+                disabled={dict.transcribing}
+                onClick={dict.listening ? dict.stop : dict.start}
+              >
+                {dict.listening ? '⏹ Stop' : dict.transcribing ? 'Working…' : '🎤 Dictate'}
               </button>
             ) : (
-              <small>Voice not supported in this browser</small>
+              <small>Voice input isn't available in this browser</small>
             )}
           </div>
+          <DictationStatus dict={dict} />
+          {dict.supported && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={dictateOnOpen}
+                onChange={(e) => {
+                  setDictateOnOpen(e.target.checked);
+                  writeDictateOnOpen(e.target.checked);
+                }}
+              />
+              Start dictating when this opens
+            </label>
+          )}
           {preview && <img className="preview" src={preview} alt="Selected part" />}
           <textarea
+            ref={textRef}
             rows={4}
             placeholder="Describe what you're adding or using…"
             value={text + (dict.interim ? ` ${dict.interim}` : '')}

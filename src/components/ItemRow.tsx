@@ -7,9 +7,12 @@ interface Props {
   item: Item;
   onQty: (item: Item, qty: number) => void;
   onEdit: (item: Item) => void;
+  /** Highlights the row for keyboard use. */
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
-export default function ItemRow({ item, onQty, onEdit }: Props) {
+export default function ItemRow({ item, onQty, onEdit, selected = false, onSelect }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [dx, setDx] = useState(0);
@@ -20,6 +23,7 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
 
   // Swipe right = +1, left = -1. Touch/pen only; the +/- buttons remain for everyone else.
   function onDown(e: PointerEvent) {
+    onSelect?.(); // a click or touch also highlights the row for keyboard use
     if (e.pointerType === 'mouse') return;
     start.current = { x: e.clientX, y: e.clientY };
     swiped.current = false;
@@ -59,7 +63,7 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
   }
 
   const armed = Math.abs(dx) >= SWIPE_THRESHOLD ? (dx > 0 ? 'will-inc' : 'will-dec') : '';
-  const rowClass = ['row', item.quantity === 0 && 'empty', dx !== 0 && 'dragging', armed].filter(Boolean).join(' ');
+  const rowClass = ['row', item.quantity === 0 && 'empty', selected && 'selected', dx !== 0 && 'dragging', armed].filter(Boolean).join(' ');
 
   function commit() {
     setEditing(false);
@@ -70,6 +74,7 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
   return (
     <li
       className={rowClass}
+      data-id={item.id}
       data-swipe={dx === 0 ? undefined : dx > 0 ? 'right' : 'left'}
       style={dx ? ({ transform: `translateX(${dx}px)`, '--gap': `${Math.abs(dx)}px` } as React.CSSProperties) : undefined}
       onPointerDown={onDown}
@@ -78,16 +83,21 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
       onPointerCancel={onCancel}
     >
       <button type="button" className="info" onClick={openEditor} aria-label={`Edit ${item.name}`}>
-        <strong>{item.name}</strong>
-        {(item.category || low || item.fact_sheet || item.datasheet_path || needsInvestigation(item)) && (
-          <span className="tags">
-            {item.category && <span className="tag">{item.category}</span>}
-            {low && <span className="tag warn">low</span>}
-            {needsInvestigation(item) && <span className="tag warn">🔎 investigate</span>}
-            {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
-          </span>
-        )}
-        {meta && <small>{meta}</small>}
+        <span className="name-col">
+          <strong>{item.name}</strong>
+          {(item.category || low || item.fact_sheet || item.datasheet_path || needsInvestigation(item)) && (
+            <span className="tags">
+              {item.category && <span className="tag">{item.category}</span>}
+              {low && <span className="tag warn">low</span>}
+              {needsInvestigation(item) && <span className="tag warn">🔎 investigate</span>}
+              {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
+            </span>
+          )}
+        </span>
+        {meta && <small className="meta-line">{meta}</small>}
+        <span className="cell">{item.part_number}</span>
+        <span className="cell">{[item.value, item.package].filter(Boolean).join(' · ')}</span>
+        <span className="cell">{item.location}</span>
       </button>
       <div className="qty">
         <button
