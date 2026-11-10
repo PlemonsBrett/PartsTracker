@@ -19,10 +19,12 @@ const CAPTION = {
 interface Props extends Drawable {
   /** Written on the chip body, e.g. the part number. */
   title?: string | null;
+  /** Wrap in a collapsible section (default). Turn off when it already sits inside a titled section. */
+  collapsible?: boolean;
 }
 
 /** A drawn pinout. Colours come from CSS (`.pin.<role>`), so it follows light and dark mode. */
-export default function Pinout({ pins, layout, title }: Props) {
+export default function Pinout({ pins, layout, title, collapsible = true }: Props) {
   const m = buildPinout(pins, layout);
   const roles = [...new Set(pins.map((p) => p.role))];
   const summary = `Pinout, ${pins.length} pins: ${pins.map((p) => `${p.number} ${p.name}`).join(', ')}`;
@@ -31,9 +33,8 @@ export default function Pinout({ pins, layout, title }: Props) {
   const room = rotated ? Math.floor((m.body.height - 32) / 7.5) : 16;
   const body = !title || room < 3 ? null : title.length > room ? `${title.slice(0, room - 1)}…` : title;
 
-  return (
-    <details className="pinout" open={pins.length <= 16}>
-      <summary>Pinout diagram ({pins.length} pins)</summary>
+  const content = (
+    <>
       <svg viewBox={`0 0 ${m.width} ${m.height}`} style={{ maxWidth: m.width }} role="img" aria-label={summary}>
         <title>{summary}</title>
         <rect className="chip" x={m.body.x} y={m.body.y} width={m.body.width} height={m.body.height} rx={6} />
@@ -73,6 +74,15 @@ export default function Pinout({ pins, layout, title }: Props) {
         ))}
       </ul>
       <small>{CAPTION[layout]}</small>
+    </>
+  );
+
+  return collapsible ? (
+    <details className="pinout" open={pins.length <= 16}>
+      <summary>Pinout diagram ({pins.length} pins)</summary>
+      {content}
     </details>
+  ) : (
+    <div className="pinout plain">{content}</div>
   );
 }

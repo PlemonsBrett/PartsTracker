@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { toCSV, toMarkdown } from './export';
 import { plural } from './format';
 import { mergeNote, nextQuantity } from './items';
+import { acceptedCount, buildPatch, type Refinement } from './refine';
 import { searchItems } from './search';
 import { swipeAction } from './swipe';
 import type { Item } from './types';
@@ -26,6 +27,7 @@ const mk = (o: Partial<Item>): Item => ({
   datasheet_path: null,
   datasheet_status: null,
   datasheet_checked_at: null,
+  pinout: null,
   ...o,
 });
 const items = [
@@ -102,5 +104,45 @@ describe('mergeNote', () => {
   it('does nothing without a note', () => {
     expect(mergeNote('x', undefined)).toBeNull();
     expect(mergeNote('x', '   ')).toBeNull();
+  });
+});
+
+describe('refine: what gets saved', () => {
+  const r: Refinement = {
+    changes: [
+      { field: 'package', from: '3-pin header', to: '3-pin breakout board' },
+      { field: 'manufacturer', from: null, to: 'ASAIR' },
+    ],
+    notes_add: 'Serial SNJ123',
+    pinout: {
+      layout: 'single',
+      pins: [
+        { number: 1, name: 'DATA', role: 'io' },
+        { number: 2, name: 'VCC', role: 'power' },
+      ],
+    },
+    summary: 's',
+    uncertain: [],
+  };
+  const none = { fields: new Set<never>(), notes: false, pinout: false };
+
+  it('accepting nothing changes nothing', () => {
+    expect(buildPatch({ notes: 'old' }, r, none)).toEqual({});
+    expect(acceptedCount(r, none)).toBe(0);
+  });
+  it('only the accepted fields are written', () => {
+    const patch = buildPatch({ notes: null }, r, { ...none, fields: new Set(['manufacturer'] as const) });
+    expect(patch).toEqual({ manufacturer: 'ASAIR' });
+  });
+  it('a new note is added below the existing notes, never replacing them', () => {
+    expect(buildPatch({ notes: 'old' }, r, { ...none, notes: true }).notes).toBe('old\nSerial SNJ123');
+  });
+  it('a pinout read from photos is saved with that source', () => {
+    const patch = buildPatch({ notes: null }, r, { ...none, pinout: true });
+    expect(patch.pinout?.source).toBe('photo');
+    expect(patch.pinout?.pins).toHaveLength(2);
+  });
+  it('counts what is accepted', () => {
+    expect(acceptedCount(r, { fields: new Set(['package', 'manufacturer'] as const), notes: true, pinout: true })).toBe(4);
   });
 });

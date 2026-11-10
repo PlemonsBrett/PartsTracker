@@ -17,6 +17,7 @@ export interface Item {
   datasheet_path: string | null;
   datasheet_status: 'found' | 'not_found' | null;
   datasheet_checked_at: string | null;
+  pinout: UserPinout | null;
 }
 
 /** Key specs parsed from a datasheet, so nobody has to read the whole PDF. */
@@ -26,6 +27,13 @@ export interface Pin {
   number: number;
   name: string;
   role: PinRole;
+}
+
+/** A pinout owned by the user: typed in, or read from their photos. Takes precedence over the datasheet's. */
+export interface UserPinout {
+  layout: Layout;
+  pins: Pin[];
+  source: 'manual' | 'photo';
 }
 
 export interface FactSheet {

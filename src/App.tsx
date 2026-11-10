@@ -5,6 +5,7 @@ import ExportMenu from './components/ExportMenu';
 import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
+import Refine from './components/Refine';
 import { findDatasheet, wantsLookup } from './lib/datasheets';
 import { plural } from './lib/format';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
@@ -47,6 +48,8 @@ function Inventory() {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
+  const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [formVersion, setFormVersion] = useState(0); // bumped when a refinement lands, so the open form shows the new values
   const [cameraPhoto, setCameraPhoto] = useState<File | null>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -135,6 +138,7 @@ function Inventory() {
     await reload();
   }
 
+  const refining = refiningId ? (items.find((i) => i.id === refiningId) ?? null) : null;
   const missing = items.filter(wantsLookup);
   const total = items.reduce((n, i) => n + i.quantity, 0);
 
@@ -258,9 +262,11 @@ function Inventory() {
 
       {editingId && (editingId === 'new' || editing) && (
         <ItemForm
+          key={`${editingId}:${formVersion}`}
           item={editing ?? undefined}
           onSave={save}
           onChanged={reload}
+          onRefine={editing ? () => setRefiningId(editing.id) : undefined}
           onDelete={
             editing
               ? async () => {
@@ -270,6 +276,19 @@ function Inventory() {
               : undefined
           }
           onClose={() => setEditingId(null)}
+        />
+      )}
+      {refining && (
+        <Refine
+          item={refining}
+          onClose={() => setRefiningId(null)}
+          onApplied={async (patch) => {
+            await reload();
+            setFormVersion((v) => v + 1);
+            // A part number that was just added makes a datasheet lookup worthwhile.
+            const next = { ...refining, ...patch } as Item;
+            if (patch.part_number && wantsLookup(next)) void attachDatasheets([next]);
+          }}
         />
       )}
       {capturing && (

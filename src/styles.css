@@ -777,3 +777,102 @@ button.rec {
 .pinout-text small {
   color: var(--muted);
 }
+
+/* ---- pin editor, refine dialog ---- */
+.pinout.plain {
+  padding: 0;
+  border: 0;
+}
+.pins-editor textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.pins-editor code {
+  padding: 0 4px;
+  background: var(--line);
+  border-radius: 4px;
+}
+button.refine {
+  width: 100%;
+  color: var(--accent);
+  border-style: dashed;
+}
+.photos {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+.photos li {
+  position: relative;
+  flex: none;
+}
+.photos img {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.photos button.icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 30px;
+  min-height: 30px;
+  color: #fff;
+  background: rgb(0 0 0 / 0.6);
+  border: 0;
+  border-radius: 50%;
+}
+.uncertain {
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-radius: 10px;
+}
+.diffs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.diffs > li {
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.diffs label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 1rem;
+  color: var(--fg);
+}
+.diffs input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  flex: none;
+  margin-top: 2px;
+}
+.diffs label > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.diffs .old {
+  color: var(--muted);
+  text-decoration: line-through;
+  overflow-wrap: anywhere;
+}
+.diffs .new {
+  overflow-wrap: anywhere;
+}

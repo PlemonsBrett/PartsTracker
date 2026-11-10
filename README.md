@@ -31,6 +31,8 @@ Cloudflare/Railway aren't needed. You could put Cloudflare in front of Pages lat
 - **Quantities**: − / + buttons, tap the number to type an exact count, or swipe a row (right = +1, left = −1). A toast offers **Undo** for a few seconds. Every change is logged in `inventory_events`.
 - **Capture notes**: if the analysis flags something (unreadable marking, a guess), that note is saved in the part's Notes. An existing part keeps its notes and the new one is added below.
 - **Pinout diagrams**: a part's datasheet panel draws its pinout (pin 1 marked, pins coloured by role) when the lookup found a numbered pin table for a dual-row, single-row or 3-lead package. Parts looked up before this feature are drawn from their saved text pinout when the package is clear; "Look up again" refreshes them. Anything else keeps the plain text list.
+- **Hand-entered pinouts**: in a part's edit screen, "Add a pinout by hand" takes one pin per line (pin 1 first) and draws it as you type. Useful for breakout boards and modules with no datasheet pin table. Saved on the part, apart from the datasheet.
+- **Update from photos & notes**: in a part's edit screen, add up to 4 more photos and any comments (what you measured, what's printed on it). Claude proposes changes to the part's fields, a note to add, and possibly a pinout; you tick what to keep. Nothing is saved until you press Apply, and existing notes are never replaced.
 - **📷 camera button**: next to Capture; opens the camera and analyses the photo straight away, then shows the same review screen.
 - **Install on your phone**: iPhone: Share → Add to Home Screen. Android/Chrome: menu → Install app. It opens full-screen; there is no offline mode.
 

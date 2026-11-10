@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.find-datasheet]
 verify_jwt = true
+
+[functions.refine-item]
+verify_jwt = true

@@ -1,4 +1,7 @@
-import { type FormEvent, type ReactNode, useEffect } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef } from 'react';
+
+// Open dialogs, oldest first. Escape closes only the newest, so a dialog opened from another closes alone.
+const open: symbol[] = [];
 
 interface Props {
   title: string;
@@ -12,11 +15,21 @@ interface Props {
 
 /** Bottom sheet on phones, centred dialog on larger screens. Closes on Escape, ✕ or a backdrop tap. */
 export default function Modal({ title, onClose, children, footer, onSubmit }: Props) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const me = Symbol('modal');
+    open.push(me);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open[open.length - 1] === me) closeRef.current();
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      open.splice(open.indexOf(me), 1);
+    };
+  }, []);
 
   const inner = (
     <>
