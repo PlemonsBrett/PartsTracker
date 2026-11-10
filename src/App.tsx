@@ -7,12 +7,14 @@ import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
 import Refine from './components/Refine';
+import ShortcutsHelp from './components/ShortcutsHelp';
 import ToolsDialog from './components/ToolsDialog';
 import { findDatasheet, wantsLookup } from './lib/datasheets';
 import { plural } from './lib/format';
 import { needsInvestigation } from './lib/investigate';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
 import { searchItems } from './lib/search';
+import { actionFor, isTypingTarget, moveSelection } from './lib/shortcuts';
 import { configured, supabase } from './lib/supabase';
 import { listTools } from './lib/tools';
 import type { Item, ItemInput, Proposal, Tool } from './lib/types';
@@ -76,6 +78,9 @@ function Inventory() {
   const [investigatingId, setInvestigatingId] = useState<string | null>(null);
   const [tools, setTools] = useState<Tool[] | null>(null); // null until loaded
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [toolsPromptHidden, setToolsPromptHidden] = useState(readPromptHidden);
   const [formVersion, setFormVersion] = useState(0); // bumped when a refinement lands, so the open form shows the new values
   const [cameraPhoto, setCameraPhoto] = useState<File | null>(null);
@@ -147,6 +152,72 @@ function Inventory() {
     return () => clearTimeout(t);
   }, [undo]);
 
+  // Keyboard control of the list. The handler is rebuilt every render and called through a ref, so it always sees the
+  // current state while the listener itself is only attached once.
+  const keys = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  keys.current = (e) => {
+    const target = document.activeElement;
+    const inSearch = target === searchRef.current;
+    const modalOpen = Boolean(editingId || capturing || refiningId || investigatingId || toolsOpen || helpOpen);
+    const action = actionFor(e, { typing: isTypingTarget(target), modalOpen, inSearch });
+    if (!action) return;
+    const at = visible.findIndex((i) => i.id === selectedId);
+    const selected = at >= 0 ? visible[at] : undefined;
+    const go = (dir: 1 | -1) => {
+      const next = visible[moveSelection(at, visible.length, dir)];
+      if (next) setSelectedId(next.id);
+    };
+    e.preventDefault(); // also stops the key from being typed into a box that opens as a result
+    switch (action) {
+      case 'search':
+        searchRef.current?.focus();
+        searchRef.current?.select();
+        break;
+      case 'capture':
+        setCapturing(true);
+        break;
+      case 'add':
+        setEditingId('new');
+        break;
+      case 'next':
+        go(1);
+        break;
+      case 'prev':
+        go(-1);
+        break;
+      case 'open': {
+        const part = selected ?? (inSearch ? visible[0] : undefined);
+        if (part) setEditingId(part.id);
+        break;
+      }
+      case 'inc':
+        if (selected) changeQty(selected, selected.quantity + 1);
+        break;
+      case 'dec':
+        if (selected && selected.quantity > 0) changeQty(selected, selected.quantity - 1);
+        break;
+      case 'help':
+        setHelpOpen(true);
+        break;
+      case 'clear':
+        if (inSearch) {
+          setQuery('');
+          searchRef.current?.blur();
+        } else setSelectedId(null);
+        break;
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keys.current(e);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Keep the highlighted row on screen as it moves.
+  useEffect(() => {
+    if (selectedId) document.querySelector(`[data-id="${selectedId}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [selectedId]);
+
   const editing = editingId && editingId !== 'new' ? (items.find((i) => i.id === editingId) ?? null) : null;
 
   async function save(input: ItemInput) {
@@ -194,10 +265,27 @@ function Inventory() {
             {plural(items.length, 'part')} · {plural(total, 'unit')}
           </p>
         </div>
+        <div className="desktop-actions">
+          <button type="button" className="primary" onClick={() => setCapturing(true)}>
+            ✨ Capture <kbd>C</kbd>
+          </button>
+          <button type="button" onClick={() => setEditingId('new')}>
+            ＋ Add <kbd>N</kbd>
+          </button>
+        </div>
         <ExportMenu
           items={visible}
           label={visible.length === items.length ? `All ${plural(items.length, 'item')}` : `${plural(visible.length, 'filtered item')}`}
         />
+        <button
+          type="button"
+          className="icon desktop-only"
+          onClick={() => setHelpOpen(true)}
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          ⌨
+        </button>
         <button type="button" className="icon" onClick={() => setToolsOpen(true)} aria-label="My tools" title="My tools">
           🧰
         </button>
@@ -210,6 +298,7 @@ function Inventory() {
 
       <div className="filters">
         <input
+          ref={searchRef}
           type="search"
           placeholder="Search parts…"
           aria-label="Search parts"
@@ -288,11 +377,29 @@ function Inventory() {
       ) : visible.length === 0 ? (
         <p className="hint">{items.length ? 'No matches.' : 'No parts yet — tap ✨ Capture to add your first.'}</p>
       ) : (
-        <ul className="list">
-          {visible.map((i) => (
-            <ItemRow key={i.id} item={i} onQty={changeQty} onEdit={(it) => setEditingId(it.id)} />
-          ))}
-        </ul>
+        <>
+          <div className="list-head" aria-hidden="true">
+            <div className="cols">
+              <span>Part</span>
+              <span>Part number</span>
+              <span>Value · package</span>
+              <span>Location</span>
+            </div>
+            <span>Quantity</span>
+          </div>
+          <ul className="list">
+            {visible.map((i) => (
+              <ItemRow
+                key={i.id}
+                item={i}
+                selected={i.id === selectedId}
+                onSelect={() => setSelectedId(i.id)}
+                onQty={changeQty}
+                onEdit={(it) => setEditingId(it.id)}
+              />
+            ))}
+          </ul>
+        </>
       )}
 
       {undo && (
@@ -352,6 +459,7 @@ function Inventory() {
           onClose={() => setEditingId(null)}
         />
       )}
+      {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
       {toolsOpen && tools && <ToolsDialog tools={tools} onChanged={reloadTools} onClose={() => setToolsOpen(false)} />}
       {investigating && (
         <Investigate
@@ -359,9 +467,9 @@ function Inventory() {
           hasTools={(tools?.length ?? 0) > 0}
           onOpenTools={() => setToolsOpen(true)}
           onChanged={reload}
-          onRecord={() => {
+          onRecord={(results) => {
             // Test results go through the same review as any other update to the part.
-            setRefineText('Test results:\n');
+            setRefineText(results);
             setRefiningId(investigating.id);
             setInvestigatingId(null);
             void reload(); // pick up the steps ticked so far, so reopening shows them

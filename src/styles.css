@@ -946,8 +946,8 @@ button.refine {
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.steps > li.done {
-  opacity: 0.6;
+.steps > li.done > label {
+  opacity: 0.6; /* the instructions fade once done; what you wrote stays easy to read */
 }
 .steps label {
   display: flex;
@@ -973,4 +973,226 @@ button.refine {
 }
 .steps .caution {
   color: var(--warn);
+}
+
+/* ---- desktop mode: wide screen with a mouse; phones and touch tablets keep the layout above ---- */
+:root {
+  --cols: minmax(0, 2.4fr) minmax(0, 1.2fr) minmax(0, 1.3fr) minmax(0, 1fr);
+}
+.desktop-actions,
+.list-head,
+.cell,
+kbd,
+button.desktop-only {
+  display: none;
+}
+kbd {
+  padding: 1px 6px;
+  font:
+    0.72rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 5px;
+}
+.name-col {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.sheet label.check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.check input {
+  width: 18px;
+  min-height: 18px;
+}
+.keys h3 {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.keys dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.keys dl > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.keys dt {
+  min-width: 110px;
+}
+.keys dd {
+  margin: 0;
+}
+.keys kbd {
+  display: inline-block;
+}
+
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  :root {
+    --tap: 36px;
+  }
+  main {
+    max-width: 1120px;
+    padding-bottom: 40px;
+  }
+  .top {
+    gap: 10px;
+    padding-top: 10px;
+  }
+  .desktop-actions {
+    display: flex;
+    gap: 8px;
+  }
+  button.desktop-only {
+    display: inline-grid;
+  }
+  kbd {
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: 1px;
+  }
+  .dock {
+    display: none;
+  }
+  .toast {
+    bottom: 24px;
+  }
+
+  /* search and filters on one line */
+  .filters {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .filters input {
+    flex: none;
+    width: 340px;
+  }
+  .chips {
+    flex: 1;
+    margin: 0;
+    padding: 8px 0;
+  }
+
+  /* the list becomes a table */
+  .list-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    padding: 8px 10px 4px 2px;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .list-head .cols {
+    display: grid;
+    grid-template-columns: var(--cols);
+    gap: 12px;
+    padding: 0 10px;
+  }
+  .list-head > span {
+    text-align: center;
+  }
+  .list {
+    gap: 4px;
+    margin-top: 0;
+  }
+  .row {
+    grid-template-columns: minmax(0, 1fr) 150px;
+    border-radius: 10px;
+    padding: 0 8px 0 2px;
+  }
+  .row:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  }
+  .row.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  .info {
+    min-height: 48px;
+    grid-template-columns: var(--cols);
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .info .meta-line {
+    display: none;
+  }
+  .cell {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .qty button {
+    width: 34px;
+    min-height: 34px;
+    font-size: 1.1rem;
+  }
+  .qty .num {
+    width: 44px;
+  }
+
+  /* dialogs open as a panel on the right, so the list stays visible beside them */
+  .modal {
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+  .sheet {
+    max-width: 520px;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    border-left: 1px solid var(--line);
+  }
+  .sheet .sheet-foot kbd {
+    margin-left: 8px;
+  }
+
+  /* capture: speaking is the main way in, so the dictate button comes first */
+  .capture-tools .dictate {
+    order: -1;
+  }
+}
+
+/* ---- notes on each test step ---- */
+.step-note {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0 32px;
+}
+.step-note textarea {
+  padding-right: 48px;
+  resize: vertical;
+}
+.step-note button.icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 40px;
+  min-height: 40px;
+}
+.save-state {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.actions.wrap {
+  flex-wrap: wrap;
 }

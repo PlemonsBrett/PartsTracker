@@ -10,6 +10,12 @@ Ideas that are wanted but not built yet. Newest first within each section.
 - Per-tool quick reference (which button does what) kept with each tool, so plans can stay specific as the library of tools grows.
 - Offer an investigation from the first capture photo for parts that are clearly unknown, before the part is saved.
 
+### Dictation follow-ups
+
+- Live partial words for the on-device engine (transcribe in chunks while you talk).
+- Better accuracy for part numbers: a vocabulary of the owner's own parts to bias the model, or an optional cloud transcription service (needs an API key; audio would leave the machine).
+- GPU acceleration (WebGPU) where available, so transcription is nearly instant.
+
 ### Next up
 
 Decide between these (pinouts, the first of the three, is done):
@@ -27,6 +33,7 @@ Decide between these (pinouts, the first of the three, is done):
 
 ## Done
 
+- Desktop mode (table, side panel, keyboard shortcuts, dictation-first capture) and dictation that works in Firefox through an on-device speech model.
 - Test equipment profile ("My tools") and an investigation flow for parts capture is unsure about: a test plan written for the owner's own tools, with step progress, safety notes and a hand-off to "Update from photos & notes".
 - Enter a pinout by hand (live preview) for parts with no datasheet table, and update a part from extra photos and comments, including a pinout read from the photos. Both are saved on the part, separate from the datasheet.
 - Generated pinout diagrams for dual-row (DIP/SOIC), single-row (headers, modules) and 3-lead (TO-92/TO-220) packages, coloured by pin role.
