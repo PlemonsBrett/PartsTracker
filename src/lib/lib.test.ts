@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cleanTranscript, makeProgress } from './audio';
 import { toCSV, toMarkdown } from './export';
+import { countFacets, isLow, matchesStatus } from './facets';
 import { plural } from './format';
 import { compileResults, hasProgress, needsInvestigation, setStepNote, toggleDone } from './investigate';
 import { mergeNote, nextQuantity, unknownsOf } from './items';
@@ -338,5 +339,38 @@ describe('step notes', () => {
   it('is just the heading when nothing has been done, and survives no plan', () => {
     expect(compileResults(plan, [], {})).toBe('Test results:\n');
     expect(compileResults(null, [0], { '0': 'x' })).toBe('Test results:\n');
+  });
+});
+
+describe('facets', () => {
+  const part = (o: Partial<Item>) => mk({ quantity: 5, ...o });
+  const parts = [
+    part({ name: 'a', category: 'Resistor', min_quantity: 10, quantity: 3 }),
+    part({ name: 'b', category: 'Resistor' }),
+    part({ name: 'c', category: 'IC', investigation: { unknowns: ['pin order'] } }),
+    part({ name: 'd', category: null, investigation: { unknowns: ['x'], resolved: true } }),
+  ];
+
+  it('low stock needs a threshold and a count at or below it', () => {
+    expect(isLow({ quantity: 3, min_quantity: 10 })).toBe(true);
+    expect(isLow({ quantity: 10, min_quantity: 10 })).toBe(true);
+    expect(isLow({ quantity: 11, min_quantity: 10 })).toBe(false);
+    expect(isLow({ quantity: 0, min_quantity: 0 })).toBe(false); // not tracked
+  });
+  it('counts parts, low stock, parts to investigate and each category', () => {
+    const f = countFacets(parts);
+    expect(f.all).toBe(4);
+    expect(f.low).toBe(1);
+    expect(f.investigate).toBe(1); // the resolved one doesn't count
+    expect(f.categories).toEqual([
+      ['IC', 1],
+      ['Resistor', 2],
+    ]);
+  });
+  it('handles an empty list', () => expect(countFacets([])).toEqual({ all: 0, low: 0, investigate: 0, categories: [] }));
+  it('filters by status', () => {
+    expect(parts.filter((p) => matchesStatus(p, '')).length).toBe(4);
+    expect(parts.filter((p) => matchesStatus(p, 'low')).map((p) => p.name)).toEqual(['a']);
+    expect(parts.filter((p) => matchesStatus(p, 'investigate')).map((p) => p.name)).toEqual(['c']);
   });
 });

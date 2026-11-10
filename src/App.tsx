@@ -10,6 +10,7 @@ import Refine from './components/Refine';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ToolsDialog from './components/ToolsDialog';
 import { findDatasheet, wantsLookup } from './lib/datasheets';
+import { countFacets, matchesStatus, type Status } from './lib/facets';
 import { plural } from './lib/format';
 import { needsInvestigation } from './lib/investigate';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
@@ -69,7 +70,7 @@ function Inventory() {
   const [items, setItems] = useState<Item[]>([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
-  const [lowOnly, setLowOnly] = useState(false);
+  const [status, setStatus] = useState<Status>('');
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
@@ -115,12 +116,13 @@ function Inventory() {
   }, [reload]);
 
   const categories = useMemo(() => [...new Set(items.map((i) => i.category).filter(Boolean) as string[])].sort(), [items]);
-  const visible = useMemo(() => {
-    let r = searchItems(items, query);
-    if (category) r = r.filter((i) => i.category === category);
-    if (lowOnly) r = r.filter((i) => i.min_quantity > 0 && i.quantity <= i.min_quantity);
-    return r;
-  }, [items, query, category, lowOnly]);
+  const searched = useMemo(() => searchItems(items, query), [items, query]);
+  const facets = useMemo(() => countFacets(searched), [searched]);
+  const visible = useMemo(
+    () => searched.filter((i) => (!category || i.category === category) && matchesStatus(i, status)),
+    [searched, category, status],
+  );
+  const catCount = useMemo(() => new Map(facets.categories), [facets]);
 
   // Optimistic quantity write; roll back by reloading if it fails.
   async function writeQty(id: string, qty: number) {
@@ -311,20 +313,29 @@ function Inventory() {
         <nav className="chips" aria-label="Filters">
           <button
             type="button"
-            className={!category && !lowOnly ? 'on' : ''}
+            className={!category && !status ? 'on' : ''}
             onClick={() => {
               setCategory('');
-              setLowOnly(false);
+              setStatus('');
             }}
           >
-            All
+            All<span className="count">{facets.all}</span>
           </button>
-          <button type="button" className={lowOnly ? 'on' : ''} onClick={() => setLowOnly(!lowOnly)}>
-            Low stock
+          <button type="button" className={status === 'low' ? 'on' : ''} onClick={() => setStatus(status === 'low' ? '' : 'low')}>
+            Low stock<span className="count">{facets.low}</span>
           </button>
+          <button
+            type="button"
+            className={`side-only${status === 'investigate' ? ' on' : ''}`}
+            onClick={() => setStatus(status === 'investigate' ? '' : 'investigate')}
+          >
+            To investigate<span className="count">{facets.investigate}</span>
+          </button>
+          <span className="chips-title">Categories</span>
           {categories.map((c) => (
             <button type="button" key={c} className={category === c ? 'on' : ''} onClick={() => setCategory(category === c ? '' : c)}>
               {c}
+              <span className="count">{catCount.get(c) ?? 0}</span>
             </button>
           ))}
         </nav>
