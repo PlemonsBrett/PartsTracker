@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { toCSV, toMarkdown } from './export';
 import { plural } from './format';
-import { mergeNote, nextQuantity } from './items';
+import { needsInvestigation, toggleDone } from './investigate';
+import { mergeNote, nextQuantity, unknownsOf } from './items';
 import { acceptedCount, buildPatch, type Refinement } from './refine';
 import { searchItems } from './search';
 import { swipeAction } from './swipe';
+import { cleanTool } from './tools';
 import type { Item } from './types';
 import { nextUndo } from './undo';
 
@@ -28,6 +30,7 @@ const mk = (o: Partial<Item>): Item => ({
   datasheet_status: null,
   datasheet_checked_at: null,
   pinout: null,
+  investigation: null,
   ...o,
 });
 const items = [
@@ -145,4 +148,53 @@ describe('refine: what gets saved', () => {
   it('counts what is accepted', () => {
     expect(acceptedCount(r, { fields: new Set(['package', 'manufacturer'] as const), notes: true, pinout: true })).toBe(4);
   });
+});
+
+describe('unknownsOf', () => {
+  it('lists what the model could not determine, trimmed', () => {
+    expect(unknownsOf({ confidence: 'medium', unknowns: [' pin order ', '', 'voltage rating'] })).toEqual(['pin order', 'voltage rating']);
+  });
+  it('a "low" confidence with no detail still means something is unknown', () => {
+    expect(unknownsOf({ confidence: 'low', unknowns: [] })).toEqual(['what this part is']);
+    expect(unknownsOf({ confidence: 'low' })).toEqual(['what this part is']);
+  });
+  it('a confident answer with nothing listed has nothing to investigate', () => {
+    expect(unknownsOf({ confidence: 'high', unknowns: [] })).toEqual([]);
+    expect(unknownsOf({})).toEqual([]);
+  });
+});
+
+describe('needsInvestigation', () => {
+  const inv = (o: object) => ({ investigation: { unknowns: ['x'], ...o } });
+  it('is true while something is unknown and not resolved', () => expect(needsInvestigation(inv({}))).toBe(true));
+  it('is false once resolved, or with nothing unknown, or no investigation', () => {
+    expect(needsInvestigation(inv({ resolved: true }))).toBe(false);
+    expect(needsInvestigation(inv({ unknowns: [] }))).toBe(false);
+    expect(needsInvestigation({ investigation: null })).toBe(false);
+  });
+});
+
+describe('toggleDone', () => {
+  it('adds a step in order and removes it again', () => {
+    expect(toggleDone([0, 2], 1)).toEqual([0, 1, 2]);
+    expect(toggleDone([0, 1, 2], 1)).toEqual([0, 2]);
+  });
+  it('does not change the original', () => {
+    const d = [1];
+    toggleDone(d, 0);
+    expect(d).toEqual([1]);
+  });
+});
+
+describe('cleanTool', () => {
+  it('trims, caps lengths and turns empty notes into null', () => {
+    expect(cleanTool({ kind: 'multimeter', name: '  FNIRSI DMT-99 ', notes: '   ' })).toEqual({
+      kind: 'multimeter',
+      name: 'FNIRSI DMT-99',
+      notes: null,
+    });
+    expect(cleanTool({ kind: 'other', name: 'x'.repeat(200), notes: 'y'.repeat(900) })?.name).toHaveLength(80);
+    expect(cleanTool({ kind: 'other', name: 'x', notes: 'y'.repeat(900) })?.notes).toHaveLength(600);
+  });
+  it('needs a name', () => expect(cleanTool({ kind: 'other', name: '   ', notes: 'n' })).toBeNull());
 });

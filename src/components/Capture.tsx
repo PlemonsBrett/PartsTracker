@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDictation } from '../lib/dictation';
-import { imageToBase64, parseInventory } from '../lib/items';
+import { imageToBase64, parseInventory, unknownsOf } from '../lib/items';
 import type { Item, Proposal } from '../lib/types';
 import Modal from './Modal';
 
@@ -157,6 +157,9 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
                           .join('')}
                       </small>
                       {p.note && <small className="warn-text">⚠ {p.note}</small>}
+                      {unknownsOf(p).length > 0 && (
+                        <small className="warn-text">🔎 Not sure: {unknownsOf(p).join(', ')}. You'll be offered a test plan.</small>
+                      )}
                     </span>
                   </label>
                   <div className="op">

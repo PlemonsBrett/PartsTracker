@@ -1,4 +1,5 @@
 import { type PointerEvent, useRef, useState } from 'react';
+import { needsInvestigation } from '../lib/investigate';
 import { SWIPE_MAX_TRAVEL, SWIPE_THRESHOLD, swipeAction } from '../lib/swipe';
 import type { Item } from '../lib/types';
 
@@ -78,10 +79,11 @@ export default function ItemRow({ item, onQty, onEdit }: Props) {
     >
       <button type="button" className="info" onClick={openEditor} aria-label={`Edit ${item.name}`}>
         <strong>{item.name}</strong>
-        {(item.category || low || item.fact_sheet || item.datasheet_path) && (
+        {(item.category || low || item.fact_sheet || item.datasheet_path || needsInvestigation(item)) && (
           <span className="tags">
             {item.category && <span className="tag">{item.category}</span>}
             {low && <span className="tag warn">low</span>}
+            {needsInvestigation(item) && <span className="tag warn">🔎 investigate</span>}
             {(item.fact_sheet || item.datasheet_path) && <span className="tag">datasheet</span>}
           </span>
         )}

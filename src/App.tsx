@@ -2,16 +2,20 @@ import type { Session } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Capture from './components/Capture';
 import ExportMenu from './components/ExportMenu';
+import Investigate from './components/Investigate';
 import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
 import Refine from './components/Refine';
+import ToolsDialog from './components/ToolsDialog';
 import { findDatasheet, wantsLookup } from './lib/datasheets';
 import { plural } from './lib/format';
+import { needsInvestigation } from './lib/investigate';
 import { applyProposals, createItem, deleteItem, listItems, updateItem } from './lib/items';
 import { searchItems } from './lib/search';
 import { configured, supabase } from './lib/supabase';
-import type { Item, ItemInput, Proposal } from './lib/types';
+import { listTools } from './lib/tools';
+import type { Item, ItemInput, Proposal, Tool } from './lib/types';
 import { nextUndo, type Undo } from './lib/undo';
 
 export default function App() {
@@ -40,6 +44,25 @@ export default function App() {
   return session ? <Inventory /> : <Login />;
 }
 
+const PROMPT_KEY = 'partstracker.toolsPromptHidden';
+
+// Browser storage can be unavailable (private windows, blocked site data); the prompt just shows again then.
+function readPromptHidden(): boolean {
+  try {
+    return localStorage.getItem(PROMPT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function hidePrompt() {
+  try {
+    localStorage.setItem(PROMPT_KEY, '1');
+  } catch {
+    // nothing to do
+  }
+}
+
 function Inventory() {
   const [items, setItems] = useState<Item[]>([]);
   const [query, setQuery] = useState('');
@@ -49,6 +72,11 @@ function Inventory() {
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
   const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [refineText, setRefineText] = useState('');
+  const [investigatingId, setInvestigatingId] = useState<string | null>(null);
+  const [tools, setTools] = useState<Tool[] | null>(null); // null until loaded
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsPromptHidden, setToolsPromptHidden] = useState(readPromptHidden);
   const [formVersion, setFormVersion] = useState(0); // bumped when a refinement lands, so the open form shows the new values
   const [cameraPhoto, setCameraPhoto] = useState<File | null>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
@@ -65,6 +93,18 @@ function Inventory() {
     }
     setLoading(false);
   }, []);
+  const reloadTools = useCallback(async () => {
+    try {
+      setTools(await listTools());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setTools([]);
+    }
+  }, []);
+  useEffect(() => {
+    reloadTools();
+  }, [reloadTools]);
+
   useEffect(() => {
     reload();
   }, [reload]);
@@ -116,8 +156,8 @@ function Inventory() {
   }
 
   async function apply(p: Proposal[]) {
-    const created = await applyProposals(p, items);
-    await reload();
+    const { created } = await applyProposals(p, items);
+    await reload(); // parts the model was unsure about now carry an "investigate" flag and show in the notice below
     void attachDatasheets(created.filter(wantsLookup)); // runs in the background
   }
 
@@ -139,6 +179,9 @@ function Inventory() {
   }
 
   const refining = refiningId ? (items.find((i) => i.id === refiningId) ?? null) : null;
+  const investigating = investigatingId ? (items.find((i) => i.id === investigatingId) ?? null) : null;
+  const toInvestigate = items.filter(needsInvestigation);
+  const showToolsPrompt = tools !== null && tools.length === 0 && !toolsPromptHidden && !toolsOpen;
   const missing = items.filter(wantsLookup);
   const total = items.reduce((n, i) => n + i.quantity, 0);
 
@@ -155,6 +198,9 @@ function Inventory() {
           items={visible}
           label={visible.length === items.length ? `All ${plural(items.length, 'item')}` : `${plural(visible.length, 'filtered item')}`}
         />
+        <button type="button" className="icon" onClick={() => setToolsOpen(true)} aria-label="My tools" title="My tools">
+          🧰
+        </button>
         <button type="button" className="icon" onClick={() => supabase.auth.signOut()} aria-label="Sign out">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M12 3v9M6.4 6.4a8 8 0 1 0 11.2 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -200,6 +246,33 @@ function Inventory() {
         <p className="hint" role="status">
           {note}
         </p>
+      )}
+      {showToolsPrompt && (
+        <div className="notice">
+          <span>🧰 Tell me what test equipment you have, so test plans fit your tools.</span>
+          <button type="button" onClick={() => setToolsOpen(true)}>
+            Set up
+          </button>
+          <button
+            type="button"
+            className="icon"
+            aria-label="Not now"
+            onClick={() => {
+              hidePrompt();
+              setToolsPromptHidden(true);
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      {toInvestigate.length > 0 && (
+        <div className="notice">
+          <span>🔎 {plural(toInvestigate.length, 'part')} to investigate</span>
+          <button type="button" onClick={() => setInvestigatingId(toInvestigate[0].id)}>
+            Open
+          </button>
+        </div>
       )}
       {missing.length > 0 && !note.startsWith('Finding') && (
         <div className="notice">
@@ -267,6 +340,7 @@ function Inventory() {
           onSave={save}
           onChanged={reload}
           onRefine={editing ? () => setRefiningId(editing.id) : undefined}
+          onInvestigate={editing ? () => setInvestigatingId(editing.id) : undefined}
           onDelete={
             editing
               ? async () => {
@@ -278,10 +352,34 @@ function Inventory() {
           onClose={() => setEditingId(null)}
         />
       )}
+      {toolsOpen && tools && <ToolsDialog tools={tools} onChanged={reloadTools} onClose={() => setToolsOpen(false)} />}
+      {investigating && (
+        <Investigate
+          item={investigating}
+          hasTools={(tools?.length ?? 0) > 0}
+          onOpenTools={() => setToolsOpen(true)}
+          onChanged={reload}
+          onRecord={() => {
+            // Test results go through the same review as any other update to the part.
+            setRefineText('Test results:\n');
+            setRefiningId(investigating.id);
+            setInvestigatingId(null);
+            void reload(); // pick up the steps ticked so far, so reopening shows them
+          }}
+          onClose={() => {
+            setInvestigatingId(null);
+            void reload();
+          }}
+        />
+      )}
       {refining && (
         <Refine
           item={refining}
-          onClose={() => setRefiningId(null)}
+          initialText={refineText}
+          onClose={() => {
+            setRefiningId(null);
+            setRefineText('');
+          }}
           onApplied={async (patch) => {
             await reload();
             setFormVersion((v) => v + 1);

@@ -16,3 +16,6 @@ verify_jwt = true
 
 [functions.refine-item]
 verify_jwt = true
+
+[functions.investigate-item]
+verify_jwt = true

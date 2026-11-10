@@ -44,9 +44,25 @@ export function nextQuantity(current: number, p: Pick<Proposal, 'op' | 'quantity
 }
 
 /** Applies reviewed proposals. Existing items only get blank fields filled, never overwritten. */
-/** Applies reviewed proposals and returns the items that were newly created. */
-export async function applyProposals(proposals: Proposal[], items: Item[]): Promise<Item[]> {
+/** What the model could not determine about a proposal; a "low" confidence with no detail still counts. */
+export function unknownsOf(p: Pick<Proposal, 'confidence' | 'unknowns'>): string[] {
+  const list = (p.unknowns ?? []).map((u) => u.trim()).filter(Boolean);
+  if (list.length === 0 && p.confidence === 'low') return ['what this part is'];
+  return list;
+}
+
+export interface Unsure {
+  item: Item;
+  unknowns: string[];
+}
+
+/**
+ * Applies reviewed proposals. Returns the items that were newly created, and which of those the model was unsure
+ * about; those are saved with an investigation flag and a line in their notes saying what was unclear.
+ */
+export async function applyProposals(proposals: Proposal[], items: Item[]): Promise<{ created: Item[]; unsure: Unsure[] }> {
   const created: Item[] = [];
+  const unsure: Unsure[] = [];
   const byId = new Map(items.map((i) => [i.id, i]));
   for (const p of proposals) {
     const existing = p.item_id ? byId.get(p.item_id) : undefined;
@@ -60,12 +76,17 @@ export async function applyProposals(proposals: Proposal[], items: Item[]): Prom
       if (p.op === 'remove') continue; // nothing to remove from
       const input: ItemInput = { name: p.name, quantity: Math.max(0, p.quantity) };
       for (const f of FILLABLE) if (p[f]) input[f] = p[f];
-      const notes = mergeNote(null, p.note);
+      const unknowns = unknownsOf(p);
+      const unclear = unknowns.length ? `Unsure at capture: ${unknowns.join('; ')}.` : null;
+      const notes = mergeNote(null, [p.note, unclear].filter(Boolean).join('\n'));
       if (notes) input.notes = notes;
-      created.push(await createItem(input));
+      if (unknowns.length) input.investigation = { unknowns };
+      const item = await createItem(input);
+      created.push(item);
+      if (unknowns.length) unsure.push({ item, unknowns });
     }
   }
-  return created;
+  return { created, unsure };
 }
 
 export async function parseInventory(args: { text?: string; image?: string; mediaType?: string }): Promise<Proposal[]> {

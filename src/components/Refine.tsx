@@ -16,13 +16,15 @@ interface Photo {
 
 interface Props {
   item: Item;
+  /** Pre-fills the comment box, e.g. when arriving from an investigation. */
+  initialText?: string;
   onApplied: (patch: Record<string, unknown>) => void | Promise<void>;
   onClose: () => void;
 }
 
-export default function Refine({ item, onApplied, onClose }: Props) {
+export default function Refine({ item, initialText = '', onApplied, onClose }: Props) {
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [result, setResult] = useState<Refinement | null>(null);
   const [accepted, setAccepted] = useState<Accepted>({ fields: new Set(), notes: false, pinout: false });
   const [busy, setBusy] = useState(false);

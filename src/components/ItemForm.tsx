@@ -25,9 +25,11 @@ interface Props {
   onChanged?: () => Promise<void>;
   /** Opens the "update from photos & notes" dialog for this part. */
   onRefine?: () => void;
+  /** Opens the test-plan dialog for this part. */
+  onInvestigate?: () => void;
 }
 
-export default function ItemForm({ item, onSave, onDelete, onClose, onChanged, onRefine }: Props) {
+export default function ItemForm({ item, onSave, onDelete, onClose, onChanged, onRefine, onInvestigate }: Props) {
   const [v, setV] = useState<Record<string, string>>(() => ({
     name: item?.name ?? '',
     quantity: String(item?.quantity ?? 1),
@@ -122,6 +124,11 @@ export default function ItemForm({ item, onSave, onDelete, onClose, onChanged, o
       {item && onRefine && (
         <button type="button" className="refine" onClick={onRefine}>
           ✨ Update from photos &amp; notes
+        </button>
+      )}
+      {item && onInvestigate && (
+        <button type="button" className="refine" onClick={onInvestigate}>
+          🔎 How do I test this?
         </button>
       )}
       {item && onChanged && <PinsEditor item={item} onChanged={onChanged} />}
