@@ -21,6 +21,7 @@ const OP_LABEL = { add: 'Add', remove: 'Remove', set: 'Set to' } as const;
 
 export default function Capture({ items, onApply, onClose, initialPhoto }: Props) {
   const [text, setText] = useState('');
+  const [shared, setShared] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
   const [proposals, setProposals] = useState<Row[] | null>(null);
@@ -46,7 +47,12 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
     try {
       dict.stop();
       const img = file ? await imageToBase64(file) : undefined;
-      const out = await parseInventory({ text: text || undefined, image: img?.data, mediaType: img?.mediaType });
+      const out = await parseInventory({
+        text: text || undefined,
+        shared: shared.trim() || undefined,
+        image: img?.data,
+        mediaType: img?.mediaType,
+      });
       if (!out.length) setErr('Nothing recognised — try adding a few details.');
       setProposals(out.map((p) => ({ ...p, key: crypto.randomUUID() })));
       setPicked(out.map(() => true));
@@ -181,6 +187,15 @@ export default function Capture({ items, onApply, onClose, initialPhoto }: Props
             value={text + (dict.interim ? ` ${dict.interim}` : '')}
             onChange={(e) => setText(e.target.value)}
           />
+          <label className="shared">
+            <span>These all share (optional)</span>
+            <input
+              type="text"
+              placeholder="e.g. ceramic, through-hole, 1/4 W metal film 1%"
+              value={shared}
+              onChange={(e) => setShared(e.target.value)}
+            />
+          </label>
           {err && <p className="msg">{err}</p>}
         </>
       ) : (

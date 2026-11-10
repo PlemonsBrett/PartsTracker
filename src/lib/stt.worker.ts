@@ -45,7 +45,7 @@ ctx.onmessage = async (e: MessageEvent) => {
       await load();
     } else if (msg.type === 'transcribe') {
       const asr = await load();
-      const out = await asr(msg.audio, { chunk_length_s: 30 });
+      const out = await asr(msg.audio, { chunk_length_s: 30, stride_length_s: 5 });
       const text = Array.isArray(out) ? out.map((o) => o.text).join(' ') : out.text;
       ctx.postMessage({ type: 'result', id: msg.id, text });
     }

@@ -3,7 +3,7 @@ export const WHISPER_RATE = 16000;
 /** Anything shorter than this is a stray tap, not speech. */
 export const MIN_SECONDS = 0.4;
 /** Recording stops by itself after this long, so a forgotten microphone doesn't run forever. */
-export const MAX_SECONDS = 120;
+export const MAX_SECONDS = 600;
 
 // Whisper writes "[BLANK_AUDIO]", "(silence)", "*music*" or note symbols for sound that isn't speech.
 const NON_SPEECH = /\[[^\]]*\]|\((?:silence|music|noise|inaudible|blank)[^)]*\)|\*[^*]*\*|♪+/gi;

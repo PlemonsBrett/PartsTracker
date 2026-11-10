@@ -1252,3 +1252,11 @@ kbd {
 .actions.wrap {
   flex-wrap: wrap;
 }
+
+.sheet label.shared {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

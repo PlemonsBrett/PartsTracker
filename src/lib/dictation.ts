@@ -11,7 +11,7 @@ type Rec = {
   stop(): void;
   onresult: ((e: { resultIndex: number; results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((e: { error?: string }) => void) | null;
 };
 const SpeechCtor = (): (new () => Rec) | undefined => {
   const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
@@ -57,29 +57,54 @@ export function useDictation(onFinal: (text: string) => void) {
   const session = useRef<Session | null>(null);
   const cb = useRef(onFinal);
   cb.current = onFinal;
+  // True from Start until Stop. The browser ends a recognition session on its own after a pause or a minute or so;
+  // while this is set we quietly start another, so a long list can be read out in one go.
+  const wanted = useRef(false);
 
   const startBrowser = useCallback(() => {
     const C = SpeechCtor();
     if (!C) return;
-    const r = new C();
-    r.continuous = true;
-    r.interimResults = true;
-    r.lang = navigator.language || 'en-US';
-    r.onresult = (e) => {
-      let live = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i];
-        if (res.isFinal) cb.current(res[0].transcript.trim());
-        else live += res[0].transcript;
-      }
-      setInterim(live);
+    wanted.current = true;
+    let restarts = 0;
+    let lastStart = 0;
+    const begin = () => {
+      const r = new C();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = navigator.language || 'en-US';
+      r.onresult = (e) => {
+        let live = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i];
+          if (res.isFinal) cb.current(res[0].transcript.trim());
+          else live += res[0].transcript;
+        }
+        setInterim(live);
+      };
+      r.onerror = (e) => {
+        // Permission problems are final; a pause with no speech is not.
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') wanted.current = false;
+      };
+      r.onend = () => {
+        setInterim('');
+        const quick = Date.now() - lastStart < 1000;
+        restarts = quick ? restarts + 1 : 0;
+        if (wanted.current && restarts < 3) {
+          try {
+            begin();
+            return;
+          } catch {
+            // fall through and stop
+          }
+        }
+        wanted.current = false;
+        setStatus('idle');
+      };
+      rec.current = r;
+      lastStart = Date.now();
+      r.start();
     };
-    r.onend = r.onerror = () => {
-      setStatus('idle');
-      setInterim('');
-    };
-    rec.current = r;
-    r.start();
+    begin();
     setStatus('listening');
   }, []);
 
@@ -136,12 +161,15 @@ export function useDictation(onFinal: (text: string) => void) {
   }, [engine, startBrowser, startLocal]);
 
   const stop = useCallback(() => {
-    if (engine === 'browser') rec.current?.stop();
-    else stopLocal();
+    if (engine === 'browser') {
+      wanted.current = false;
+      rec.current?.stop();
+    } else stopLocal();
   }, [engine, stopLocal]);
 
   useEffect(
     () => () => {
+      wanted.current = false;
       rec.current?.stop();
       const s = session.current;
       if (s) {
