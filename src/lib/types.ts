@@ -114,3 +114,57 @@ export interface Proposal {
   /** What it could not determine. */
   unknowns?: string[];
 }
+
+export type ProjectStatus = 'idea' | 'building' | 'done' | 'shelved';
+
+export interface DiagramPin {
+  name: string;
+  role: PinRole;
+}
+/** One box on the diagram: a part of the project, or an outside thing like a battery (external). */
+export interface DiagramPart {
+  ref: string;
+  label: string;
+  role: string | null;
+  external: boolean;
+  pins: DiagramPin[];
+}
+export interface DiagramEnd {
+  ref: string;
+  pin: string;
+}
+export interface DiagramNet {
+  name: string;
+  ends: DiagramEnd[];
+}
+/** A wiring diagram written by Claude and checked before it is stored. Drawn by our own code, never by the model. */
+export interface Diagram {
+  parts: DiagramPart[];
+  nets: DiagramNet[];
+  notes: string[];
+  generated_at: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  notes: string | null;
+  diagram: Diagram | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A part a project needs. `item_id` is null when it is not in the inventory (a part to get). */
+export interface ProjectPart {
+  id: string;
+  project_id: string;
+  item_id: string | null;
+  name: string;
+  quantity: number;
+  role: string | null;
+  used_at: string | null;
+  /** Units taken from the inventory when the parts were used (may be fewer than `quantity` if stock ran short). */
+  taken: number | null;
+}

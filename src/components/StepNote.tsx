@@ -7,10 +7,19 @@ interface Props {
   onChange: (text: string) => void;
   /** Called when the box loses focus, so a save does not wait for the typing delay. */
   onBlur: () => void;
+  placeholder?: string;
+  minRows?: number;
 }
 
 /** A notes box for one test step, with a microphone so a reading can be spoken instead of typed. */
-export default function StepNote({ value, label, onChange, onBlur }: Props) {
+export default function StepNote({
+  value,
+  label,
+  onChange,
+  onBlur,
+  placeholder = 'Write down what you measured or saw…',
+  minRows = 2,
+}: Props) {
   const dict = useDictation((t) => onChange(value ? `${value} ${t}` : t));
   const lines = value.split('\n').length;
 
@@ -18,9 +27,9 @@ export default function StepNote({ value, label, onChange, onBlur }: Props) {
     <div className="step-note">
       <textarea
         aria-label={label}
-        rows={Math.min(8, Math.max(2, lines + 1))}
+        rows={Math.min(14, Math.max(minRows, lines + 1))}
         value={value + (dict.interim ? ` ${dict.interim}` : '')}
-        placeholder="Write down what you measured or saw…"
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
       />

@@ -6,6 +6,7 @@ import Investigate from './components/Investigate';
 import ItemForm from './components/ItemForm';
 import ItemRow from './components/ItemRow';
 import Login from './components/Login';
+import Projects from './components/Projects';
 import Refine from './components/Refine';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ToolsDialog from './components/ToolsDialog';
@@ -79,6 +80,7 @@ function Inventory() {
   const [investigatingId, setInvestigatingId] = useState<string | null>(null);
   const [tools, setTools] = useState<Tool[] | null>(null); // null until loaded
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -160,7 +162,7 @@ function Inventory() {
   keys.current = (e) => {
     const target = document.activeElement;
     const inSearch = target === searchRef.current;
-    const modalOpen = Boolean(editingId || capturing || refiningId || investigatingId || toolsOpen || helpOpen);
+    const modalOpen = Boolean(editingId || capturing || refiningId || investigatingId || toolsOpen || projectsOpen || helpOpen);
     const action = actionFor(e, { typing: isTypingTarget(target), modalOpen, inSearch });
     if (!action) return;
     const at = visible.findIndex((i) => i.id === selectedId);
@@ -287,6 +289,12 @@ function Inventory() {
           title="Keyboard shortcuts (?)"
         >
           ⌨
+        </button>
+        <button type="button" className="icon" onClick={() => setProjectsOpen(true)} aria-label="Projects" title="Projects">
+          📁
+        </button>
+        <button type="button" className="icon" onClick={() => setProjectsOpen(true)} aria-label="Projects" title="Projects">
+          📁
         </button>
         <button type="button" className="icon" onClick={() => setToolsOpen(true)} aria-label="My tools" title="My tools">
           🧰
@@ -471,6 +479,7 @@ function Inventory() {
         />
       )}
       {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
+      {projectsOpen && <Projects items={items} onItemsChanged={reload} onClose={() => setProjectsOpen(false)} />}
       {toolsOpen && tools && <ToolsDialog tools={tools} onChanged={reloadTools} onClose={() => setToolsOpen(false)} />}
       {investigating && (
         <Investigate
