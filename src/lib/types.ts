@@ -69,6 +69,8 @@ export interface Investigation {
   unknowns: string[];
   plan?: TestPlan;
   done?: number[];
+  /** What the owner wrote for each step, keyed by the step's position ("0" is the first). */
+  notes?: Record<string, string>;
   resolved?: boolean;
 }
 

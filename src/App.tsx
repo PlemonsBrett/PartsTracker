@@ -467,9 +467,9 @@ function Inventory() {
           hasTools={(tools?.length ?? 0) > 0}
           onOpenTools={() => setToolsOpen(true)}
           onChanged={reload}
-          onRecord={() => {
+          onRecord={(results) => {
             // Test results go through the same review as any other update to the part.
-            setRefineText('Test results:\n');
+            setRefineText(results);
             setRefiningId(investigating.id);
             setInvestigatingId(null);
             void reload(); // pick up the steps ticked so far, so reopening shows them

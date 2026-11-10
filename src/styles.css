@@ -946,8 +946,8 @@ button.refine {
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.steps > li.done {
-  opacity: 0.6;
+.steps > li.done > label {
+  opacity: 0.6; /* the instructions fade once done; what you wrote stays easy to read */
 }
 .steps label {
   display: flex;
@@ -1169,4 +1169,30 @@ kbd {
   .capture-tools .dictate {
     order: -1;
   }
+}
+
+/* ---- notes on each test step ---- */
+.step-note {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0 32px;
+}
+.step-note textarea {
+  padding-right: 48px;
+  resize: vertical;
+}
+.step-note button.icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 40px;
+  min-height: 40px;
+}
+.save-state {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.actions.wrap {
+  flex-wrap: wrap;
 }

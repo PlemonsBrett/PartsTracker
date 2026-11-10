@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cleanTranscript, makeProgress } from './audio';
 import { toCSV, toMarkdown } from './export';
 import { plural } from './format';
-import { needsInvestigation, toggleDone } from './investigate';
+import { compileResults, hasProgress, needsInvestigation, setStepNote, toggleDone } from './investigate';
 import { mergeNote, nextQuantity, unknownsOf } from './items';
 import { acceptedCount, buildPatch, type Refinement } from './refine';
 import { searchItems } from './search';
@@ -298,4 +298,45 @@ describe('moveSelection', () => {
     expect(moveSelection(0, 5, -1)).toBe(0);
   });
   it('has nothing to select in an empty list', () => expect(moveSelection(0, 0, 1)).toBe(-1));
+});
+
+describe('step notes', () => {
+  const plan = {
+    steps: [
+      { title: 'Look for markings', tool: 'No tool needed', instructions: 'i', expect: 'e', caution: null },
+      { title: 'Resistance between pins', tool: 'FNIRSI DMT-99', instructions: 'i', expect: 'e', caution: null },
+      { title: 'First power-up', tool: 'Kungber SPS3010', instructions: 'i', expect: 'e', caution: null },
+    ],
+  };
+
+  it('stores a note by step position and removes it when emptied', () => {
+    const a = setStepNote({}, 1, '5.1k between 1 and 2');
+    expect(a).toEqual({ '1': '5.1k between 1 and 2' });
+    expect(setStepNote(a, 0, 'CNT5')).toEqual({ '0': 'CNT5', '1': '5.1k between 1 and 2' });
+    expect(setStepNote(a, 1, '   ')).toEqual({});
+  });
+  it('does not change the notes it was given', () => {
+    const a = { '0': 'x' };
+    setStepNote(a, 1, 'y');
+    expect(a).toEqual({ '0': 'x' });
+  });
+  it('knows whether anything would be lost', () => {
+    expect(hasProgress([], {})).toBe(false);
+    expect(hasProgress([], { '0': '  ' })).toBe(false);
+    expect(hasProgress([0], {})).toBe(true);
+    expect(hasProgress([], { '2': 'hot' })).toBe(true);
+  });
+  it('compiles results in plan order, skipping steps with nothing', () => {
+    const text = compileResults(plan, [0, 1], { '1': '5.1k between pins 1 and 2', '2': 'drew 12 mA at 3.3 V' });
+    expect(text).toBe(
+      'Test results:\n1. Look for markings ✓\n2. Resistance between pins (FNIRSI DMT-99) ✓: 5.1k between pins 1 and 2\n3. First power-up (Kungber SPS3010): drew 12 mA at 3.3 V\n',
+    );
+  });
+  it('indents extra lines of a note under its step', () => {
+    expect(compileResults(plan, [], { '0': 'line one\nline two' })).toContain('1. Look for markings: line one\n   line two');
+  });
+  it('is just the heading when nothing has been done, and survives no plan', () => {
+    expect(compileResults(plan, [], {})).toBe('Test results:\n');
+    expect(compileResults(null, [0], { '0': 'x' })).toBe('Test results:\n');
+  });
 });
