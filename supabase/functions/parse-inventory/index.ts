@@ -72,6 +72,9 @@ Rules:
 - From a photo: read markings, labels and bags. Count visible units only if countable; otherwise quantity 1 and say so in "note".
 - Default op is "add" for photos and for phrases like "got", "bought", "received". Use "remove" for "used", "took", "gave". Use "set" for "I have N", "recount", "there are N".
 - Prefer SI-style values with units (10kΩ, 4.7µF).
+- Record what you are told. If a dictated value is unusual or looks like a mis-hearing, keep the value as said and put the doubt in "note": never swap it for a different standard value. Dictation often garbles digits ("23.3k" for 3.3k); a number the owner reads out twice is usually a restart, not two parts.
+- Ceramic capacitors and many SMD parts carry a 3-digit code: the first two digits are the value in pF and the third is the number of zeros (100 = 10pF, 221 = 220pF, 104 = 100nF). A code spoken after a value is that marking; put it in "description" as "Marking 104". Do not treat it as a quantity.
+- If the message has a "Shared details" line, those facts are true of EVERY part in the message. Apply them to each part (package, description and so on) and never list them under "unknowns".
 - Say how sure you are. "confidence" is "high" when you can read the part number or are certain what it is, "medium" when you are fairly sure but key details are missing, "low" when you cannot tell what it is. List what you could not determine in "unknowns" (short phrases). If you list nothing important, confidence is "high". The owner can test unknown parts, so being honest about gaps is more useful than guessing.`;
 
 Deno.serve(async (req) => {
@@ -87,7 +90,7 @@ Deno.serve(async (req) => {
     } = await sb.auth.getUser();
     if (!user) return json({ error: 'Not signed in' }, 401);
 
-    const { text, image, mediaType } = (await req.json()) as { text?: string; image?: string; mediaType?: string };
+    const { text, image, mediaType, shared } = (await req.json()) as { text?: string; image?: string; mediaType?: string; shared?: string };
     if (!text?.trim() && !image) return json({ error: 'Provide text and/or an image' }, 400);
 
     const { data: items, error } = await sb
@@ -102,7 +105,7 @@ Deno.serve(async (req) => {
     }
     content.push({
       type: 'text',
-      text: `Existing inventory (JSON):\n${JSON.stringify(items)}\n\nUser message: ${text?.trim() || '(photo only — add what you see)'}`,
+      text: `Existing inventory (JSON):\n${JSON.stringify(items)}\n\n${shared?.trim() ? `Shared details (true of every part below): ${shared.trim().slice(0, 500)}\n\n` : ''}User message: ${text?.trim() || '(photo only — add what you see)'}`,
     });
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {

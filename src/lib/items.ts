@@ -89,7 +89,7 @@ export async function applyProposals(proposals: Proposal[], items: Item[]): Prom
   return { created, unsure };
 }
 
-export async function parseInventory(args: { text?: string; image?: string; mediaType?: string }): Promise<Proposal[]> {
+export async function parseInventory(args: { text?: string; image?: string; mediaType?: string; shared?: string }): Promise<Proposal[]> {
   const { data, error } = await supabase.functions.invoke('parse-inventory', { body: args });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
