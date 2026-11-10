@@ -24,6 +24,7 @@ import {
 } from '../lib/projects';
 import type { Item, Project, ProjectPart, ProjectStatus } from '../lib/types';
 import DiagramView from './DiagramView';
+import Ideas from './Ideas';
 import Modal from './Modal';
 import StepNote from './StepNote';
 
@@ -39,6 +40,7 @@ const when = (iso: string) => new Date(iso).toLocaleDateString(undefined, { mont
 export default function Projects({ items, onItemsChanged, onClose }: Props) {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [view, setView] = useState<'list' | 'ideas'>('list');
   const [name, setName] = useState('');
   const [err, setErr] = useState('');
 
@@ -73,6 +75,20 @@ export default function Projects({ items, onItemsChanged, onClose }: Props) {
       />
     );
 
+  if (view === 'ideas')
+    return (
+      <Ideas
+        items={items}
+        onBack={() => setView('list')}
+        onClose={onClose}
+        onStarted={async (id) => {
+          await reload();
+          setView('list');
+          setOpenId(id);
+        }}
+      />
+    );
+
   async function create() {
     const n = cleanName(name);
     if (!n) return;
@@ -103,6 +119,9 @@ export default function Projects({ items, onItemsChanged, onClose }: Props) {
         A project keeps your notes, the parts it needs (from your inventory or still to get), and a wiring diagram Claude can draw from
         them.
       </p>
+      <button type="button" className="primary ideas-button" onClick={() => setView('ideas')}>
+        💡 Ideas from my parts
+      </button>
       <form
         className="project-new"
         onSubmit={(e) => {

@@ -21,7 +21,7 @@ Ideas that are wanted but not built yet. Newest first within each section.
 Decide between these (pinouts, the first of the three, is done):
 
 - **Projects, next**: MCP tools so an agent can read and update projects; mark a part's pins on its pinout from the diagram; export a project (notes, parts, diagram) as Markdown.
-- **Project-ideas chatbot**: suggests what you could build from the parts you have, using the same inventory data the MCP server exposes.
+- **Project chatbot**: a conversation about what to build or how to wire it, rather than a list of ideas; it would use the same inventory data the MCP server exposes.
 
 ### Pinout follow-ups
 
@@ -33,6 +33,7 @@ Decide between these (pinouts, the first of the three, is done):
 
 ## Done
 
+- Project ideas ranked by how much is in stock, with 3D-printed parts for your printers (Creality Halot Mage 8K, FlashForge Adventurer 5); an idea becomes a project in one tap.
 - Projects: notes, a parts list (inventory parts and parts not in the inventory), stock check and shopping list, using parts takes them from the inventory (with put back), and a generated wiring diagram that says where each part goes.
 - Desktop mode (table, side panel, keyboard shortcuts, dictation-first capture) and dictation that works in Firefox through an on-device speech model.
 - Test equipment profile ("My tools") and an investigation flow for parts capture is unsure about: a test plan written for the owner's own tools, with step progress, safety notes and a hand-off to "Update from photos & notes".
