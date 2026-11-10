@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { buildPinout, inferLayout, type Pin, parsePinoutText, resolvePinout, validPins } from './pinout';
+import {
+  buildPinout,
+  inferLayout,
+  type Pin,
+  parsePinLines,
+  parsePinoutText,
+  pinProblem,
+  pinsToLines,
+  resolvePinout,
+  validPins,
+} from './pinout';
 import type { FactSheet } from './types';
 
 const mk = (names: string[]): Pin[] => names.map((name, i) => ({ number: i + 1, name, role: 'other' }));
@@ -167,5 +177,27 @@ describe('buildPinout geometry', () => {
   });
   it('refuses pins that do not fit the layout', () => {
     expect(() => buildPinout(mk(['a', 'b', 'c']), 'dual')).toThrow();
+  });
+});
+
+describe('pin editor text', () => {
+  it('reads one pin per line, pin 1 first, guessing roles from names', () => {
+    const pins = parsePinLines('DATA\nVCC\n\n GND ');
+    expect(pins.map((p) => `${p.number} ${p.name} ${p.role}`)).toEqual(['1 DATA other', '2 VCC power', '3 GND ground']);
+  });
+  it('an explicit |role overrides the guess and unknown roles fall back to the guess', () => {
+    const pins = parsePinLines('S|input\nVCC|output\nGND|banana');
+    expect(pins.map((p) => p.role)).toEqual(['input', 'output', 'ground']);
+  });
+  it('round-trips through pinsToLines', () => {
+    const pins = parsePinLines('DATA|io\nVCC|power\nGND|ground');
+    expect(parsePinLines(pinsToLines(pins))).toEqual(pins);
+  });
+  it('explains why pins cannot be drawn', () => {
+    expect(pinProblem([], 'single')).toMatch(/at least one/);
+    expect(pinProblem(parsePinLines('a\nb\nc'), 'dual')).toMatch(/even number/);
+    expect(pinProblem(parsePinLines('a\nb'), 'three-lead')).toMatch(/exactly 3/);
+    expect(pinProblem(parsePinLines('a\nb\nc'), 'single')).toBeNull();
+    expect(pinProblem(parsePinLines('a\nb\nc\nd'), 'dual')).toBeNull();
   });
 });

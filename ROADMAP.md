@@ -13,12 +13,15 @@ Decide between these (pinouts, the first of the three, is done):
 
 ### Pinout follow-ups
 
-- Parts with no datasheet (breakout boards, modules) still have no diagram. A way to enter or paste a pin list by hand would cover them, for example the LCD and the Bluetooth board.
+- A "leads" drawing for wired parts (solar cell, speaker, battery) instead of the chip strip.
+- Offer a pinout from the very first capture photo, not only when updating a part.
+
 - Package layouts not drawn yet: QFP/QFN/BGA, SOT-23 and other odd shapes. These keep the plain text pin list.
 - Tap a pin to see its function; pin alternate functions for microcontrollers.
 
 ## Done
 
+- Enter a pinout by hand (live preview) for parts with no datasheet table, and update a part from extra photos and comments, including a pinout read from the photos. Both are saved on the part, separate from the datasheet.
 - Generated pinout diagrams for dual-row (DIP/SOIC), single-row (headers, modules) and 3-lead (TO-92/TO-220) packages, coloured by pin role.
 - Install as a home-screen app (web manifest and icons; no offline mode).
 - Undo for quantity changes (toast with Undo after any +/-, typed count or swipe).

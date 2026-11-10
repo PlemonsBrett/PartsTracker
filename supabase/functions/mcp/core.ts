@@ -18,6 +18,12 @@ export interface Item {
   fact_sheet?: FactSheet | null;
   datasheet_path?: string | null;
   datasheet_status?: 'found' | 'not_found' | null;
+  /** Pinout entered by the user or read from their photos. */
+  pinout?: {
+    layout: 'dual' | 'single' | 'three-lead';
+    pins: { number: number; name: string; role: string }[];
+    source: 'manual' | 'photo';
+  } | null;
 }
 export interface FactSheet {
   summary: string;

@@ -10,9 +10,11 @@ const TOP_SPECS = 5;
 interface Props {
   item: Item;
   onChanged: () => Promise<void>;
+  /** The part has its own pinout, shown elsewhere; don't draw the datasheet's as well. */
+  hideDiagram?: boolean;
 }
 
-export default function DatasheetPanel({ item, onChanged }: Props) {
+export default function DatasheetPanel({ item, onChanged, hideDiagram = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const facts = item.fact_sheet;
@@ -28,9 +30,9 @@ export default function DatasheetPanel({ item, onChanged }: Props) {
   ]
     .filter(Boolean)
     .join(' ');
-  const diagram = facts ? resolvePinout(facts, hint) : null;
+  const diagram = facts && !hideDiagram ? resolvePinout(facts, hint) : null;
   const restSpecs = facts ? facts.specs.slice(TOP_SPECS) : [];
-  const hasMore = restSpecs.length > 0 || Boolean(facts && (facts.features.length > 0 || (facts.pinout && !diagram)));
+  const hasMore = restSpecs.length > 0 || Boolean(facts && (facts.features.length > 0 || (facts.pinout && !diagram && !hideDiagram)));
 
   async function run(job: () => Promise<string | undefined>) {
     setBusy(true);
@@ -88,7 +90,7 @@ export default function DatasheetPanel({ item, onChanged }: Props) {
                   ))}
                 </ul>
               )}
-              {facts.pinout && !diagram && (
+              {facts.pinout && !diagram && !hideDiagram && (
                 <p className="pinout-text">
                   Pinout: {facts.pinout}
                   <small> · Use “Look up again” to try for a diagram.</small>

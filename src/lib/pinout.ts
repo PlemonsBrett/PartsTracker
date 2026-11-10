@@ -61,6 +61,40 @@ export function inferLayout(pinCount: number, hint: string): Layout | null {
   return null;
 }
 
+const ROLE_WORDS: PinRole[] = ['power', 'ground', 'input', 'output', 'io', 'nc', 'other'];
+
+/**
+ * Pins typed one per line, pin 1 first: "DATA", "VCC|power", "GND". A trailing "|role" sets the colour;
+ * otherwise it is guessed from the name. Blank lines are ignored.
+ */
+export function parsePinLines(text: string): Pin[] {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line, i) => {
+      const [rawName, rawRole] = line.split('|').map((x) => x.trim());
+      const role = ROLE_WORDS.find((r) => r === rawRole?.toLowerCase());
+      const name = rawName.slice(0, 24);
+      return { number: i + 1, name, role: role ?? guessRole(name) };
+    });
+}
+
+export function pinsToLines(pins: Pin[]): string {
+  return pins.map((p) => `${p.name}|${p.role}`).join('\n');
+}
+
+/** A short reason the pins can't be drawn with this layout, or null when they can. */
+export function pinProblem(pins: Pin[], layout: Layout): string | null {
+  const n = pins.length;
+  if (n === 0) return 'Add at least one pin.';
+  if (validPins(pins, layout)) return null;
+  if (layout === 'dual')
+    return n % 2 !== 0 ? `A dual-row chip needs an even number of pins (you have ${n}).` : 'A dual-row chip needs 4 to 64 pins.';
+  if (layout === 'three-lead') return `A 3-lead part needs exactly 3 pins (you have ${n}).`;
+  return n < 2 ? 'A single row needs at least 2 pins.' : 'A single row can have at most 40 pins.';
+}
+
 export interface Drawable {
   pins: Pin[];
   layout: Layout;

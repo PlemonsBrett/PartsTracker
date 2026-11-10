@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Item, ItemInput } from '../lib/types';
 import DatasheetPanel from './DatasheetPanel';
 import Modal from './Modal';
+import PinsEditor from './PinsEditor';
 
 const FIELDS: [keyof ItemInput, string][] = [
   ['category', 'Category'],
@@ -22,9 +23,11 @@ interface Props {
   onClose: () => void;
   /** Called after the datasheet changes so the parent can refresh its list. */
   onChanged?: () => Promise<void>;
+  /** Opens the "update from photos & notes" dialog for this part. */
+  onRefine?: () => void;
 }
 
-export default function ItemForm({ item, onSave, onDelete, onClose, onChanged }: Props) {
+export default function ItemForm({ item, onSave, onDelete, onClose, onChanged, onRefine }: Props) {
   const [v, setV] = useState<Record<string, string>>(() => ({
     name: item?.name ?? '',
     quantity: String(item?.quantity ?? 1),
@@ -116,7 +119,13 @@ export default function ItemForm({ item, onSave, onDelete, onClose, onChanged }:
         {field('part_number', 'Part number', { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
         {field('manufacturer', 'Manufacturer')}
       </div>
-      {item && onChanged && <DatasheetPanel item={item} onChanged={onChanged} />}
+      {item && onRefine && (
+        <button type="button" className="refine" onClick={onRefine}>
+          ✨ Update from photos &amp; notes
+        </button>
+      )}
+      {item && onChanged && <PinsEditor item={item} onChanged={onChanged} />}
+      {item && onChanged && <DatasheetPanel item={item} onChanged={onChanged} hideDiagram={Boolean(item.pinout)} />}
       <details className="more">
         <summary>More details</summary>
         <div className="stack">
