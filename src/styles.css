@@ -192,6 +192,11 @@ main {
   border-radius: 999px;
   white-space: nowrap;
 }
+.chips .count,
+.chips-title,
+.chips .side-only {
+  display: none;
+}
 .chips .on {
   background: var(--accent);
   color: var(--accent-fg);
@@ -1071,20 +1076,71 @@ kbd {
     bottom: 24px;
   }
 
-  /* search and filters on one line */
-  .filters {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  /* search + filters live in a left sidebar */
+  main {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    column-gap: 28px;
+    align-content: start;
+    max-width: 1280px;
+  }
+  main > * {
+    grid-column: 2;
+  }
+  main > .top {
+    grid-column: 1 / -1;
+  }
+  main > .filters {
+    grid-column: 1;
+    grid-row: 2 / span 40;
+    align-self: start;
+    top: 12px;
+    display: block;
+    margin: 0;
+    padding: 0;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
   }
   .filters input {
-    flex: none;
-    width: 340px;
+    width: 100%;
   }
   .chips {
-    flex: 1;
-    margin: 0;
-    padding: 8px 0;
+    flex-direction: column;
+    gap: 2px;
+    overflow: visible;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .chips button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border-color: transparent;
+    background: transparent;
+    text-align: left;
+    white-space: normal;
+  }
+  .chips button:hover:not(.on) {
+    background: var(--card, rgba(127, 127, 127, 0.12));
+  }
+  .chips .count {
+    display: inline;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+  .chips .side-only {
+    display: flex;
+  }
+  .chips-title {
+    display: block;
+    margin: 14px 10px 4px;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
 
   /* the list becomes a table */
