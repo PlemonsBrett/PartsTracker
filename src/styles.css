@@ -1511,3 +1511,102 @@ kbd {
   min-width: 0;
   max-width: 100%;
 }
+
+/* ---- project ideas ---- */
+.ideas-button {
+  justify-self: start;
+}
+.ideas {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.idea {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.idea-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.pct {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pct.high {
+  color: #16a34a;
+}
+.pct.mid {
+  color: var(--warn);
+}
+.pct.low {
+  color: var(--danger);
+}
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.idea-sum {
+  margin: 0;
+}
+.idea-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.idea details > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.idea-parts {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.idea-parts li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.idea-parts li.optional {
+  opacity: 0.7;
+}
+.idea-parts small {
+  color: var(--muted);
+}
+.idea h4 {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+}
+.idea-tools {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+.idea-steps {
+  margin: 6px 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}

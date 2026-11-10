@@ -9,6 +9,7 @@ export const KIND_LABEL: Record<ToolKind, string> = {
   logic_analyzer: 'Logic analyzer',
   function_generator: 'Function generator',
   lcr_meter: 'LCR / component tester',
+  '3d_printer': '3D printer',
   other: 'Other',
 };
 

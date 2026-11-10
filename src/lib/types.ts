@@ -38,6 +38,7 @@ export type ToolKind =
   | 'logic_analyzer'
   | 'function_generator'
   | 'lcr_meter'
+  | '3d_printer'
   | 'other';
 
 /** A piece of the user's test equipment, so test instructions can name their actual tools. */
@@ -167,4 +168,43 @@ export interface ProjectPart {
   used_at: string | null;
   /** Units taken from the inventory when the parts were used (may be fewer than `quantity` if stock ran short). */
   taken: number | null;
+}
+
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+
+/** One part an idea needs. `item_id` is set when the part is one of the owner's inventory items. */
+export interface IdeaPart {
+  item_id: string | null;
+  name: string;
+  quantity: number;
+  /** Nice to have: shown, but not counted when working out how much of the idea is in stock. */
+  optional: boolean;
+  /** What it does in this project. */
+  role: string;
+}
+
+/** Something to 3D print for the project, on one of the owner's printers. Made, not bought. */
+export interface PrintedPart {
+  name: string;
+  printer: string;
+  material: string;
+  notes: string;
+}
+
+/** A project idea from Claude, checked before it was stored. */
+export interface Idea {
+  title: string;
+  summary: string;
+  difficulty: Difficulty;
+  hours: number | null;
+  parts: IdeaPart[];
+  printed: PrintedPart[];
+  tools_needed: string[];
+  steps: string[];
+}
+
+export interface IdeaRow {
+  id: string;
+  idea: Idea;
+  created_at: string;
 }
