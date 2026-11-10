@@ -1260,3 +1260,254 @@ kbd {
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+/* ---- projects ---- */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.sheet label.field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.row2 {
+  display: flex;
+  gap: 10px;
+}
+.row2 .grow {
+  flex: 1;
+  min-width: 0;
+}
+.sheet section {
+  margin-top: 18px;
+}
+.sheet section h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.project-notes .step-note {
+  margin: 0;
+}
+.project-new {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+.project-new input {
+  flex: 1;
+  min-width: 0;
+}
+.project-list,
+.project-parts,
+.matches {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.project-list button {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  text-align: left;
+  padding: 10px 12px;
+}
+.project-list small {
+  color: var(--muted);
+}
+.tag.status-building {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.tag.status-done {
+  background: color-mix(in srgb, #16a34a 20%, transparent);
+  color: #16a34a;
+}
+.project-parts li {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.pp-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.pp-edit {
+  display: flex;
+  gap: 6px;
+}
+.pp-edit input[type="number"] {
+  width: 64px;
+}
+.pp-edit input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+.tag.pp-to-get,
+.tag.pp-short {
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
+}
+.tag.pp-used {
+  background: color-mix(in srgb, #16a34a 20%, transparent);
+  color: #16a34a;
+}
+.project-parts li.used strong {
+  opacity: 0.7;
+}
+.matches button {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+}
+.stock {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+.stock p {
+  margin: 4px 0;
+}
+.stock ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.stock.ready {
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+}
+.stock.missing {
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.part-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.diagram {
+  margin: 10px 0;
+}
+.diagram-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.diagram svg {
+  display: block;
+  max-width: none;
+  font-size: 12px;
+}
+.diagram figcaption {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.diagram figcaption ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.dg-box {
+  fill: var(--bg);
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+.dg-part.external .dg-box {
+  stroke-dasharray: 5 3;
+}
+.dg-ref {
+  fill: var(--accent);
+  font-weight: 700;
+}
+.dg-label,
+.dg-pin text {
+  fill: var(--fg);
+}
+.dg-none {
+  fill: var(--muted);
+  font-style: italic;
+}
+.dg-dot {
+  fill: var(--dot, var(--muted));
+}
+.dg-pin.power {
+  --dot: #dc2626;
+}
+.dg-pin.ground {
+  --dot: #475569;
+}
+.dg-pin.input {
+  --dot: #2563eb;
+}
+.dg-pin.output {
+  --dot: #16a34a;
+}
+.dg-pin.io {
+  --dot: #d97706;
+}
+.wire {
+  --wire: #64748b;
+}
+.wire path {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.wire text {
+  fill: var(--muted);
+  font-size: 10px;
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 3px;
+}
+.wire.n0 {
+  --wire: #2563eb;
+}
+.wire.n1 {
+  --wire: #16a34a;
+}
+.wire.n2 {
+  --wire: #d97706;
+}
+.wire.n3 {
+  --wire: #9333ea;
+}
+.wire.n4 {
+  --wire: #0891b2;
+}
+.wire.n5 {
+  --wire: #db2777;
+}
+.wire.power {
+  --wire: #dc2626;
+}
+.wire.ground {
+  --wire: #64748b;
+}
+.diagram-notes {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+.sheet-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+.diagram,
+.diagram-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
