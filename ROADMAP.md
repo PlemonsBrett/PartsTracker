@@ -4,6 +4,12 @@ Ideas that are wanted but not built yet. Newest first within each section.
 
 ## Wanted
 
+### Investigation follow-ups
+
+- Photograph a meter or scope reading as the result of a step, and let Claude read the number.
+- Per-tool quick reference (which button does what) kept with each tool, so plans can stay specific as the library of tools grows.
+- Offer an investigation from the first capture photo for parts that are clearly unknown, before the part is saved.
+
 ### Next up
 
 Decide between these (pinouts, the first of the three, is done):
@@ -21,6 +27,7 @@ Decide between these (pinouts, the first of the three, is done):
 
 ## Done
 
+- Test equipment profile ("My tools") and an investigation flow for parts capture is unsure about: a test plan written for the owner's own tools, with step progress, safety notes and a hand-off to "Update from photos & notes".
 - Enter a pinout by hand (live preview) for parts with no datasheet table, and update a part from extra photos and comments, including a pinout read from the photos. Both are saved on the part, separate from the datasheet.
 - Generated pinout diagrams for dual-row (DIP/SOIC), single-row (headers, modules) and 3-lead (TO-92/TO-220) packages, coloured by pin role.
 - Install as a home-screen app (web manifest and icons; no offline mode).

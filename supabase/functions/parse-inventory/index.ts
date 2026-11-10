@@ -44,6 +44,17 @@ const tool = {
             location: { type: ['string', 'null'], description: 'Bin/drawer/shelf if mentioned' },
             description: { type: ['string', 'null'] },
             note: { type: ['string', 'null'], description: 'Uncertainty or anything the user should double check' },
+            confidence: {
+              type: 'string',
+              enum: ['high', 'medium', 'low'],
+              description: 'How sure you are of what this part is and its key details. low = could not tell what it is.',
+            },
+            unknowns: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'What you could not determine and that matters, e.g. "exact part number", "pin order", "voltage rating", "what it does"',
+            },
           },
           required: ['op', 'name', 'quantity'],
         },
@@ -60,7 +71,8 @@ Rules:
 - Never invent part numbers, values or counts you cannot see or were not told. Leave fields null and put doubts in "note".
 - From a photo: read markings, labels and bags. Count visible units only if countable; otherwise quantity 1 and say so in "note".
 - Default op is "add" for photos and for phrases like "got", "bought", "received". Use "remove" for "used", "took", "gave". Use "set" for "I have N", "recount", "there are N".
-- Prefer SI-style values with units (10kΩ, 4.7µF).`;
+- Prefer SI-style values with units (10kΩ, 4.7µF).
+- Say how sure you are. "confidence" is "high" when you can read the part number or are certain what it is, "medium" when you are fairly sure but key details are missing, "low" when you cannot tell what it is. List what you could not determine in "unknowns" (short phrases). If you list nothing important, confidence is "high". The owner can test unknown parts, so being honest about gaps is more useful than guessing.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -116,9 +128,15 @@ Deno.serve(async (req) => {
 
     // Drop any item_id the model hallucinated: it must exist in the user's inventory.
     const known = new Set((items ?? []).map((i) => i.id));
-    const changes = (block?.input?.changes ?? []).map((c: { item_id?: string | null }) => ({
+    const changes = (block?.input?.changes ?? []).map((c: { item_id?: string | null; confidence?: unknown; unknowns?: unknown }) => ({
       ...c,
       item_id: c.item_id && known.has(c.item_id) ? c.item_id : null,
+      confidence: c.confidence === 'low' || c.confidence === 'medium' ? c.confidence : 'high',
+      unknowns: (Array.isArray(c.unknowns) ? c.unknowns : [])
+        .filter((u): u is string => typeof u === 'string')
+        .map((u) => u.trim().slice(0, 120))
+        .filter(Boolean)
+        .slice(0, 6),
     }));
     return json({ changes });
   } catch (e) {

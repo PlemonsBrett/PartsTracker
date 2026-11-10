@@ -876,3 +876,101 @@ button.refine {
 .diffs .new {
   overflow-wrap: anywhere;
 }
+
+/* ---- tools and investigation ---- */
+.notice .icon {
+  flex: none;
+  min-height: 36px;
+  width: 36px;
+}
+.tool-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tool-list li {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tool-list li > div:first-child {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.tool-list small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.tool-form {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tool-form h3 {
+  font-size: 0.95rem;
+}
+.chips-static {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.safety {
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-radius: 10px;
+}
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.steps > li {
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.steps > li.done {
+  opacity: 0.6;
+}
+.steps label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 1rem;
+  color: var(--fg);
+}
+.steps input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  flex: none;
+  margin-top: 2px;
+}
+.steps label > span {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+.steps .expect {
+  color: var(--muted);
+}
+.steps .caution {
+  color: var(--warn);
+}
